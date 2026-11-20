@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shop Services</title>
+<style>
+:root{--bg:#f7f7f5;--fg:#1d1d1f;--muted:#66666c;--line:#d6d6db;--card:#ffffff;
+  --c1:#3b6fb6;--c2:#2f8a4f;--c3:#b07a16;--c4:#6b4bc2;--c5:#b8463f;--c6:#1f8a8a;--c7:#a04d8f;--chip:#f0f0f2}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141416;--fg:#ececf0;--muted:#a0a0a8;--line:#34343b;--card:#1c1c20;
+  --c1:#6fa3e8;--c2:#5cc283;--c3:#e0a948;--c4:#a68cf0;--c5:#ec7d75;--c6:#5cc8c8;--c7:#d68cc4;--chip:#26262b}}
+:root[data-theme="dark"]{--bg:#141416;--fg:#ececf0;--muted:#a0a0a8;--line:#34343b;--card:#1c1c20;
+  --c1:#6fa3e8;--c2:#5cc283;--c3:#e0a948;--c4:#a68cf0;--c5:#ec7d75;--c6:#5cc8c8;--c7:#d68cc4;--chip:#26262b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1200px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:26px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 20px}
+.all{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:14px}
+.all b{margin-right:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:12px;padding:14px 16px}
+.card h2{margin:0;font-size:18px}
+.does{color:var(--muted);margin:2px 0 12px;font-size:14px}
+.row{display:grid;grid-template-columns:70px 1fr;gap:8px;font-size:14px;margin:6px 0}
+.k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding-top:3px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--chip);border-radius:6px;padding:1px 8px;font-size:13px}
+ul{margin:0;padding-left:16px}
+li{margin:2px 0}
+h3{font-size:18px;margin:28px 0 10px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;overflow-x:auto;margin-bottom:8px}
+.panel svg{display:block;width:100%;min-width:900px;height:auto}
+.b{stroke-width:1.5}
+.edge{fill:color-mix(in srgb,var(--c1) 12%,var(--card));stroke:var(--c1)}
+.svc{fill:color-mix(in srgb,var(--c2) 12%,var(--card));stroke:var(--c2)}
+.data{fill:color-mix(in srgb,var(--c3) 12%,var(--card));stroke:var(--c3)}
+.bus{fill:color-mix(in srgb,var(--c4) 12%,var(--card));stroke:var(--c4)}
+.ext{fill:var(--chip);stroke:var(--muted)}
+.aux{fill:color-mix(in srgb,var(--c5) 12%,var(--card));stroke:var(--c5)}
+.t{font:600 14px system-ui,Segoe UI,sans-serif;fill:var(--fg)}
+.s,.lbl{font:12px system-ui,Segoe UI,sans-serif;fill:var(--muted)}
+.ar{fill:none;stroke:var(--muted);stroke-width:1.4}
+.dash{stroke-dasharray:5 4}
+.ah{fill:var(--muted)}
+.tel{margin-top:56px;padding-top:24px;border-top:1px solid var(--line)}
+p.note{color:var(--muted);font-size:14px;margin:4px 0 10px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);font-size:14px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td:first-child{font-weight:600;white-space:nowrap}
+.tw{overflow-x:auto}
+code{font:12.5px ui-monospace,Consolas,monospace}
+pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow-x:auto;margin:0}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px}
+.two h4{margin:0 0 6px;font-size:14px}
+.steps{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px}
+.steps span.st{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 10px}
+.bar{rx:3}
+.axis{stroke:var(--line);stroke-width:1}
+</style>
+</head>
+<body>
+<main>
+  <h1>Services</h1>
+  <p class="sub">7 services. Each runs as a container. Each has its own data.</p>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" class="ah"/>
+      </marker>
+    </defs>
+  </svg>
+  <div class="panel"><svg id="arch" viewBox="0 0 1400 520" role="img" aria-label="System design diagram"></svg></div>
+
+  <h3>What each service does and tracks</h3>
+  <div class="all"><b>Tracked for every service:</b> latency (p95, p99) · error rate · requests per second · CPU and memory</div>
+
+  <div class="grid">
+    <div class="card" style="--c:var(--c1)">
+      <h2>Auth</h2><p class="does">Signup, login, tokens</p>
+      <div class="row"><span class="k">Where</span><div class="chips"><span class="chip">Postgres: users</span></div></div>
+      <div class="row"><span class="k">Track</span><ul>
+        <li>Login success / fail rate</li><li>Failed logins per IP</li><li>Signups per hour</li><li>Token refresh errors</li></ul></div>
+    </div>
+
+    <div class="card" style="--c:var(--c2)">
+      <h2>Catalog</h2><p class="does">Products, prices, stock. Admin edits here.</p>
+      <div class="row"><span class="k">Where</span><div class="chips"><span class="chip">Postgres + read replica</span><span class="chip">S3: images</span></div></div>
+      <div class="row"><span class="k">Track</span><ul>
+        <li>Product page latency</li><li>Replica lag</li><li>Stock reserve failures</li><li>Admin changes (audit)</li></ul></div>
+    </div>
+
+    <div class="card" style="--c:var(--c3)">
+      <h2>Cart</h2><p class="does">Add and remove items</p>
+      <div class="row"><span class="k">Where</span><div class="chips"><span class="chip">Redis</span></div></div>
+      <div class="row"><span class="k">Track</span><ul>
+        <li>Add / remove errors</li><li>Redis latency</li><li>Redis memory</li></ul></div>
+    </div>
+
+    <div class="card" style="--c:var(--c4)">
+      <h2>Order</h2><p class="does">Runs the checkout. Owns order status.</p>
+      <div class="row"><span class="k">Where</span><div class="chips"><span class="chip">Postgres: orders</span><span class="chip">Kafka: publishes</span></div></div>
+      <div class="row"><span class="k">Track</span><ul>
+        <li>Checkout success rate</li><li>Orders by status</li><li>Orders stuck in PENDING &gt; 15 min</li><li>Events not yet published</li></ul></div>
+    </div>
+
+    <div class="card" style="--c:var(--c5)">
+      <h2>Payment</h2><p class="does">Talks to Stripe. Gets Stripe webhooks.</p>
+      <div class="row"><span class="k">Where</span><div class="chips"><span class="chip">Postgres: payments</span><span class="chip">Stripe</span></div></div>
+      <div class="row"><span class="k">Track</span><ul>
+        <li>Payment success / fail rate</li><li>Stripe API latency and errors</li><li>Webhooks received</li><li>Bad webhook signatures</li></ul></div>
+    </div>
+
+    <div class="card" style="--c:var(--c6)">
+      <h2>Delivery</h2><p class="does">Books the carrier. Keeps status and ETA.</p>
+      <div class="row"><span class="k">Where</span><div class="chips"><span class="chip">Postgres: shipments</span><span class="chip">Carrier API</span></div></div>
+      <div class="row"><span class="k">Track</span><ul>
+        <li>Carrier API errors</li><li>Status updates received</li><li>Shipments with no update &gt; 24h</li><li>Late deliveries (after ETA)</li></ul></div>
+    </div>
+
+    <div class="card" style="--c:var(--c7)">
+      <h2>Notification</h2><p class="does">Sends emails on order and delivery events.</p>
+      <div class="row"><span class="k">Where</span><div class="chips"><span class="chip">Kafka: reads</span><span class="chip">Email provider</span></div></div>
+      <div class="row"><span class="k">Track</span><ul>
+        <li>Emails sent / failed</li><li>Bounces</li><li>Kafka consumer lag</li><li>Time from event to email</li></ul></div>
+    </div>
+  </div>
+
+  <section class="tel">
+  <h1>Telemetry</h1>
+  <p class="sub">We build it ourselves. We track only the essential signals.</p>
+
+  <h3>1. What we track</h3>
+  <div class="grid">
+    <div class="card" style="--c:var(--c2)"><h2>Every service</h2><ul>
+      <li>Requests per second, error rate, p95 latency (per endpoint)</li><li>App logs with <code>trace_id</code></li><li>CPU and memory</li><li>Restarts and crashes</li></ul></div>
+    <div class="card" style="--c:var(--c1)"><h2>Load balancer / gateway</h2><ul>
+      <li>Access logs: route, status, latency, <code>trace_id</code></li><li>5xx rate</li></ul></div>
+    <div class="card" style="--c:var(--c3)"><h2>Postgres</h2><ul>
+      <li>Up or down</li><li>Query latency + slow query log</li><li>Connections used vs max</li><li>Replication lag</li><li>Disk space</li></ul></div>
+    <div class="card" style="--c:var(--c5)"><h2>Redis</h2><ul>
+      <li>Up or down</li><li>Memory used vs max</li></ul></div>
+    <div class="card" style="--c:var(--c4)"><h2>Kafka</h2><ul>
+      <li>Consumer lag</li><li>DLQ size</li></ul></div>
+    <div class="card" style="--c:var(--c6)"><h2>3rd parties</h2><ul>
+      <li>Error rate and latency of each call</li><li>Webhooks received and failed</li></ul></div>
+    <div class="card" style="--c:var(--c7)"><h2>Business</h2><ul>
+      <li>Checkout success rate</li><li>Payment success rate</li><li>Orders stuck in PENDING &gt; 15 min</li><li>Failed emails</li></ul></div>
+    <div class="card" style="--c:var(--muted)"><h2>Changes</h2><ul>
+      <li>Deploy markers on graphs</li></ul></div>
+  </div>
+
+  <h3>2. How we track it</h3>
+  <div class="panel"><svg id="pipe" viewBox="0 0 1400 420" role="img" aria-label="Telemetry pipeline"></svg></div>
+  <div class="tw"><table>
+    <tr><th>Signal</th><th>Produced by</th><th>Collected by</th></tr>
+    <tr><td>RPS, errors, latency</td><td>Middleware in each service: counters + latency histograms</td><td>Scraper pulls <code>GET /metrics</code> every 15s</td></tr>
+    <tr><td>Logs and spans</td><td>Code writes one JSON line per event to stdout, with <code>trace_id</code></td><td>Log agent on each node tails the container logs</td></tr>
+    <tr><td>CPU, memory, restarts</td><td>Linux <code>/proc</code>, cgroups, Kubernetes pod status</td><td>Node agent shows them at <code>/metrics</code></td></tr>
+    <tr><td>Postgres</td><td><code>SELECT 1</code>, <code>pg_stat_statements</code>, <code>pg_stat_activity</code>, <code>pg_stat_replication</code></td><td>Exporter runs the SQL every 15s</td></tr>
+    <tr><td>Redis</td><td><code>PING</code> and <code>INFO</code></td><td>Exporter</td></tr>
+    <tr><td>Kafka lag, DLQ</td><td>Newest offset − committed offset</td><td>Exporter</td></tr>
+    <tr><td>3rd parties</td><td>Wrapper on the HTTP client: count + duration per target</td><td>Scraper</td></tr>
+    <tr><td>Business</td><td>Counters in code + SQL job every 1 min (stuck orders)</td><td>Scraper</td></tr>
+    <tr><td>Deploys</td><td>Last step of CI sends <code>{service, version, time}</code></td><td>Events store</td></tr>
+  </table></div>
+  <p class="note">The gateway creates the <code>trace_id</code>. HTTP passes it in the <code>traceparent</code> header. Kafka passes it in message headers.</p>
+
+  <h3>3. AI agent tools</h3>
+  <p class="note">Read-only. Each tool returns a small summary, not raw data.</p>
+  <div class="tw"><table>
+    <tr><th>Group</th><th>Tool</th><th>What the agent learns</th></tr>
+    <tr><td>Map</td><td><code>list_services()</code></td><td>Who calls whom. Where to look next.</td></tr>
+    <tr><td></td><td><code>get_service_health(service)</code></td><td>Is this service sick, and since when?</td></tr>
+    <tr><td>Metrics</td><td><code>query_metric(name, labels, from, to)</code></td><td>The shape of the problem: spike, climb, drop to zero</td></tr>
+    <tr><td></td><td><code>top_endpoints(service, by, window)</code></td><td>Which endpoint is the problem</td></tr>
+    <tr><td></td><td><code>compare_windows(metric, a, b)</code></td><td>Did it change after a deploy?</td></tr>
+    <tr><td>Logs</td><td><code>search_logs(service, level, text, from, to)</code></td><td>The real error messages</td></tr>
+    <tr><td></td><td><code>log_patterns(service, level, window)</code></td><td>What is new or growing ("stripe 502 ×340")</td></tr>
+    <tr><td></td><td><code>logs_by_trace(trace_id)</code></td><td>The full story of one request</td></tr>
+    <tr><td>Traces</td><td><code>find_traces(service, status, window)</code></td><td>Sample failed or slow requests</td></tr>
+    <tr><td></td><td><code>get_trace(trace_id)</code></td><td>Which hop failed, and where the time went</td></tr>
+    <tr><td>Changes</td><td><code>list_changes(from, to, service?)</code></td><td>The most likely cause</td></tr>
+    <tr><td>Dependencies</td><td><code>db_health(db)</code></td><td>Is the database the bottleneck?</td></tr>
+    <tr><td></td><td><code>kafka_lag(group?)</code></td><td>Are events stuck? Which consumer is behind?</td></tr>
+    <tr><td></td><td><code>dlq_sample(topic, limit)</code></td><td>Why messages fail</td></tr>
+    <tr><td></td><td><code>third_party_health(provider)</code></td><td>Is it us or them?</td></tr>
+    <tr><td>Business</td><td><code>business_kpis(window)</code></td><td>Are users affected, and how much?</td></tr>
+    <tr><td></td><td><code>stuck_orders(state, older_than)</code></td><td>Real impact + order IDs to trace</td></tr>
+    <tr><td></td><td><code>get_order_timeline(order_id)</code></td><td>The full history of one customer problem</td></tr>
+    <tr><td>Context</td><td><code>list_alerts(state)</code></td><td>Where to start</td></tr>
+    <tr><td></td><td><code>get_runbook(alert)</code></td><td>Known causes and fixes</td></tr>
+    <tr><td></td><td><code>past_incidents(query)</code></td><td>"This happened before. Last time it was X."</td></tr>
+  </table></div>
+
+  <h3>4. Tool design rules</h3>
+  <div class="grid">
+    <div class="card" style="--c:var(--c1)"><ul>
+      <li><b>Read-only first.</b> Actions (restart, rollback) only later, with human approval.</li>
+      <li><b>Time window required.</b> Default: last 1h.</li>
+      <li><b>Small output.</b> Top N, counts, summaries.</li>
+      <li><b>Compare to normal.</b> "4.1% (normal 0.2%)".</li></ul></div>
+    <div class="card" style="--c:var(--c1)"><ul>
+      <li><b>Remove PII</b> in the tool, not in the prompt.</li>
+      <li><b>Return linking IDs:</b> <code>trace_id</code>, <code>order_id</code>, <code>service</code>.</li>
+      <li><b>Clear errors:</b> "No metric X. Did you mean Y?"</li></ul></div>
+  </div>
+
+  <h3>5. Example investigation</h3>
+  <pre><code>list_alerts            → "checkout error rate 6%" since 10:12
+list_changes           → payment v2.3.1 deployed at 10:10
+top_endpoints(payment) → POST /payments: 40% errors
+log_patterns(payment)  → "stripe: invalid api version" ×812 (new)
+get_trace(sample)      → Order → Payment → Stripe 400
+stuck_orders(PENDING)  → 214 orders
+
+Result: the 10:10 payment deploy broke the Stripe call. 214 orders affected.
+Suggestion: roll back payment to v2.3.0.</code></pre>
+  </section>
+</main>
+<script>
+const NS='http://www.w3.org/2000/svg';
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function text(svg,x,y,txt,cls='lbl',anchor='middle'){const t=el('text',{x,y,class:cls,'text-anchor':anchor},svg);t.textContent=txt;}
+function box(svg,x,y,w,h,cls,title,lines=[]){
+  el('rect',{x,y,width:w,height:h,rx:8,class:'b '+cls},svg);
+  text(svg,x+w/2,y+23,title,'t');
+  lines.forEach((l,i)=>text(svg,x+w/2,y+42+i*16,l,'s'));
+}
+function line(svg,pts,{dash=false,start=false}={}){
+  const p=el('path',{d:'M'+pts.map(q=>q.join(' ')).join(' L '),class:'ar'+(dash?' dash':''),'marker-end':'url(#ah)'},svg);
+  if(start)p.setAttribute('marker-start','url(#ah)');
+}
+(function(){
+  const s=document.getElementById('arch');
+  const W=180,G=17,X0=19,lx=i=>X0+i*(W+G),cx=i=>lx(i)+W/2;
+
+  // clients
+  box(s,lx(0),20,W,44,'ext','Customer');
+  box(s,lx(1),20,W,44,'ext','Admin');
+  line(s,[[cx(0),64],[cx(0),100]]);
+  line(s,[[cx(1),64],[cx(1),100]]);
+
+  // edge
+  [['CDN','Static files, images'],['Load Balancer','HTTPS'],['API Gateway','Auth check, rate limit']]
+    .forEach((e,i)=>{const x=lx(i);box(s,x,100,W,54,'edge',e[0],[e[1]]);if(i<2)line(s,[[x+W,127],[x+W+G,127]]);});
+
+  // 3rd party
+  box(s,lx(4),100,W,54,'ext','Stripe',['Payments']);
+  box(s,lx(5),100,W,54,'ext','Carrier',['Delivery']);
+  box(s,lx(6),100,W,54,'ext','Email Provider',['Sends email']);
+
+  // gateway -> services
+  el('path',{d:`M ${cx(2)} 154 L ${cx(2)} 178 M ${lx(0)+20} 178 L ${cx(3)-70} 178`,class:'ar'},s);
+  [0,1,2,3].forEach(i=>line(s,[[i?cx(i)-70:lx(0)+20,178],[i?cx(i)-70:lx(0)+20,200]]));
+  text(s,cx(0)+60,172,'HTTP calls from users');
+
+  const cols=[
+    {svc:['Auth','Signup, login, JWT'],data:['Postgres','users']},
+    {svc:['Catalog','Products + stock'],data:['Postgres','+ read replica']},
+    {svc:['Cart','Add / remove items'],data:['Redis','carts']},
+    {svc:['Order','Runs the checkout'],data:['Postgres','orders'],pub:1},
+    {svc:['Payment','Stripe + webhooks'],data:['Postgres','payments'],pub:1},
+    {svc:['Delivery','Status + ETA'],data:['Postgres','shipments'],pub:1},
+    {svc:['Notification','Sends emails']},
+  ];
+  cols.forEach((c,i)=>{
+    box(s,lx(i),200,W,64,'svc',c.svc[0],[c.svc[1]]);
+    if(c.data){line(s,[[cx(i),264],[cx(i),300]]);box(s,lx(i),300,W,60,'data',c.data[0],[c.data[1]]);}
+    if(c.pub)line(s,[[cx(i)+40,264],[cx(i)+40,280],[lx(i)+W+8,280],[lx(i)+W+8,420]]);
+  });
+
+  // Order -> Catalog (reserve stock), Order -> Payment
+  line(s,[[lx(3),232],[lx(2)+W,232]]);
+  line(s,[[lx(3)+W,232],[lx(4),232]]);
+  // 3rd party links
+  line(s,[[cx(4),154],[cx(4),200]],{start:true});
+  line(s,[[cx(5),154],[cx(5),200]],{start:true});
+  line(s,[[cx(6),200],[cx(6),154]]);
+
+  // kafka
+  el('rect',{x:X0,y:420,width:1362,height:60,rx:8,class:'b bus'},s);
+  text(s,700,445,'Kafka (events)','t');
+  text(s,700,464,'order.created · order.paid · payment.succeeded · delivery.updated','s');
+  line(s,[[cx(6),420],[cx(6),264]],{dash:true});
+  text(s,cx(6)+8,395,'reads events','lbl','start');
+  text(s,lx(3)+W+14,400,'publish','lbl','start');
+})();
+
+/* Telemetry pipeline */
+(function(){
+  const s=document.getElementById('pipe');
+  // sources
+  box(s,20,20,250,60,'svc','Services',['/metrics · JSON logs to stdout']);
+  box(s,20,100,250,60,'svc','Nodes / containers',['CPU, memory, restarts']);
+  box(s,20,180,250,60,'svc','Exporters',['Postgres SQL · Redis INFO · Kafka']);
+  box(s,20,260,250,60,'svc','Business jobs',['SQL every 1 min']);
+  box(s,20,340,250,60,'ext','CI pipeline',['Deploy events']);
+
+  // collectors
+  box(s,330,20,230,60,'edge','Log agent',['Tails logs, one per node']);
+  box(s,330,100,230,220,'edge','Scraper',['Pulls /metrics every 15s','No answer = down']);
+  line(s,[[270,40],[330,40]]);
+  el('path',{d:'M 270 62 L 300 62 L 300 130',class:'ar'},s);
+  [130,210,290].forEach(y=>line(s,[[270,y],[330,y]]));
+
+  // stores
+  box(s,620,20,230,60,'data','Log + span store',['Indexed by trace_id']);
+  box(s,620,180,230,60,'data','Time-series store',['15s points, 13 months']);
+  box(s,620,340,230,60,'data','Events store',['Deploys, config changes']);
+  line(s,[[560,50],[620,50]]);
+  line(s,[[560,210],[620,210]]);
+  line(s,[[270,370],[620,370]]);
+
+  // query api
+  box(s,910,20,200,380,'bus','Query API',['metrics · logs','traces · events']);
+  [50,210,370].forEach(y=>line(s,[[850,y],[910,y]]));
+
+  // consumers
+  box(s,1170,20,210,80,'ext','Dashboards',['Graphs + deploy markers']);
+  box(s,1170,160,210,80,'aux','Alert evaluator',['Rules every 1 min','→ Slack / email']);
+  box(s,1170,300,210,100,'svc','AI agent',['Read-only tools','(section 3)']);
+  [60,200,350].forEach(y=>line(s,[[1110,y],[1170,y]]));
+})();
+</script>
+</body>
+</html>

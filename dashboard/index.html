@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shop Telemetry</title>
+<style>
+:root{color-scheme:light;
+  --page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;
+  --grid:#e1e0d9;--axis:#c3c2b7;--border:rgba(11,11,11,.10);--hover:rgba(11,11,11,.04);--sel:rgba(42,120,214,.10);
+  --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;
+  --good:#0ca30c;--good-text:#006300;--warning:#fab219;--serious:#ec835a;--critical:#d03b3b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;
+  --page:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;
+  --grid:#2c2c2a;--axis:#383835;--border:rgba(255,255,255,.10);--hover:rgba(255,255,255,.05);--sel:rgba(57,135,229,.18);
+  --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--good-text:#0ca30c}}
+:root[data-theme="dark"]{color-scheme:dark;
+  --page:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;
+  --grid:#2c2c2a;--axis:#383835;--border:rgba(255,255,255,.10);--hover:rgba(255,255,255,.05);--sel:rgba(57,135,229,.18);
+  --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--good-text:#0ca30c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--page);border-bottom:1px solid var(--border)}
+.bar{max-width:1400px;margin:0 auto;padding:12px 16px 0;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+h1{font-size:18px;margin:0}
+.sub{color:var(--ink2);font-size:13px}
+.spacer{flex:1}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;color:var(--ink2);padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--border)}
+.seg button[aria-pressed="true"]{background:var(--sel);color:var(--ink);font-weight:600}
+nav{max-width:1400px;margin:0 auto;padding:6px 16px 0;display:flex;gap:2px;overflow-x:auto}
+nav button{border:0;background:none;color:var(--ink2);font:inherit;padding:8px 12px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--s1);font-weight:600}
+main{max-width:1400px;margin:0 auto;padding:16px 16px 60px}
+h2{font-size:15px;margin:22px 0 10px}
+h2:first-child{margin-top:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(340px,100%),1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;min-width:0}
+.chead{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.ctitle{font-size:13px;font-weight:600;color:var(--ink2)}
+.cnote{font-size:12px;color:var(--muted)}
+.cval{font-size:13px;color:var(--ink2);margin:2px 0 4px}
+.cval b{font-size:18px;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--ink2);margin:2px 0 4px}
+.legend i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.chart{position:relative}
+.chart svg{display:block;width:100%;overflow:visible}
+.chart text{font:10.5px system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--muted)}
+.chart .dl{font-size:11px;fill:var(--ink2)}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:6px 9px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.12);white-space:nowrap;display:none;z-index:2}
+.tip .t{color:var(--muted);margin-bottom:2px}
+.tip .r{display:flex;gap:8px;align-items:center;color:var(--ink2)}
+.tip .r b{color:var(--ink);font-weight:600;margin-left:auto;font-variant-numeric:tabular-nums}
+.tip .dep{color:var(--ink2);margin-top:3px;border-top:1px solid var(--border);padding-top:3px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(200px,100%),1fr));gap:12px}
+.tile .lbl{font-size:13px;color:var(--ink2)}
+.tile .big{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;margin:2px 0}
+.tile .nrm{font-size:12px;color:var(--muted);margin-bottom:6px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2);white-space:nowrap}
+.pill .dot{width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;font-size:10px;font-weight:700;color:#fff}
+.pill.good .dot{background:var(--good)}
+.pill.warning .dot{background:var(--warning);color:#0b0b0b}
+.pill.serious .dot{background:var(--serious)}
+.pill.critical .dot{background:var(--critical)}
+.pill.info .dot{background:var(--axis);color:var(--ink)}
+.tw{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--grid);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;white-space:nowrap}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+th.n{text-align:right}
+td.mono,.mono{font:12px ui-monospace,Consolas,monospace}
+td.nw{white-space:nowrap}
+.fields{color:var(--ink2);font:12px ui-monospace,Consolas,monospace;word-break:break-word}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover{background:var(--hover)}
+tbody tr.on{background:var(--sel)}
+a.lnk{color:var(--s1);cursor:pointer;text-decoration:none;font:12px ui-monospace,Consolas,monospace}
+a.lnk:hover{text-decoration:underline}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+select,input[type=text]{font:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 8px}
+input[type=text]{min-width:200px}
+.count{color:var(--muted);font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chips button{font:inherit;font-size:13px;border:1px solid var(--border);background:var(--surface);color:var(--ink2);border-radius:16px;padding:4px 12px;cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--sel);color:var(--ink);font-weight:600;border-color:transparent}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:12px;align-items:start}
+@media (max-width:900px){.split{grid-template-columns:1fr}}
+.scroll{max-height:640px;overflow:auto}
+.wf{font-size:12px}
+.wf .row{display:grid;grid-template-columns:minmax(150px,42%) 1fr;gap:8px;align-items:center;padding:3px 0;border-bottom:1px solid var(--grid)}
+.wf .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink2)}
+.wf .nm b{color:var(--ink);font-weight:600}
+.wf .track{position:relative;height:16px}
+.wf .sp{position:absolute;top:3px;height:10px;border-radius:2px;min-width:2px;background:var(--s1)}
+.wf .sp.err{background:var(--critical)}
+.wf .dur{position:absolute;top:0;font-size:11px;color:var(--muted);white-space:nowrap}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:13px;margin-bottom:10px}
+.kv span:nth-child(odd){color:var(--muted)}
+.empty{color:var(--muted);padding:20px;text-align:center}
+.notes{color:var(--ink2);font-size:13px;margin:0;padding-left:18px}
+.mapwrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px}
+.mapwrap svg{display:block;width:100%;min-width:960px;height:auto}
+.map text{font:12px system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink2)}
+.map .nt{font-weight:600;font-size:13.5px;fill:var(--ink)}
+.map .nk{font-size:10.5px;fill:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.map .bx{fill:var(--surface);stroke:var(--axis);stroke-width:1.2}
+.map .bx.ext{fill:var(--page);stroke-dasharray:4 3}
+.map .bx.bus{fill:var(--sel);stroke:var(--s1)}
+.map .node.go{cursor:pointer}
+.map .node.go:hover .bx{stroke:var(--s1);stroke-width:2}
+.map .e{fill:none;stroke:var(--muted);stroke-width:1.4}
+.map .e.wh{stroke-dasharray:5 4}
+.map .e.k{stroke:var(--s1)}
+.map .stc{stroke:var(--surface);stroke-width:2}
+.map .sti{font-size:9px;font-weight:700;text-anchor:middle}
+.lg{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:var(--ink2);margin:10px 2px 0}
+.lg span{display:inline-flex;align-items:center;gap:6px}
+ol.flow{margin:0;padding-left:20px}
+ol.flow li{margin:3px 0}
+.err-box{max-width:640px;margin:60px auto;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1>Shop telemetry</h1>
+    <span class="sub" id="scn"></span>
+    <span class="spacer"></span>
+    <span id="alertBadge"></span>
+    <div class="seg" id="range" role="group" aria-label="Time range">
+      <button data-r="1440">24h</button><button data-r="360">6h</button><button data-r="60">1h</button>
+    </div>
+  </div>
+  <nav id="tabs" role="tablist"></nav>
+</header>
+<main id="main"></main>
+
+<script>
+(function load(){
+  const scenario = new URLSearchParams(location.search).get('scenario') || 'baseline';
+  const s = document.createElement('script');
+  s.src = '../data/' + encodeURIComponent(scenario) + '/data.js';
+  s.onload = () => start();
+  s.onerror = () => {
+    document.getElementById('main').innerHTML =
+      '<div class="err-box"><b>No data for scenario "' + scenario + '".</b><p>Run <code>python seed/generate.py</code> first. ' +
+      'Then open this page again.</p></div>';
+  };
+  document.head.appendChild(s);
+})();
+
+function start(){
+const D = window.TRACER_DATA;
+const STEP = D.metrics.step_s * 1000, N = D.metrics.points, T0 = Date.parse(D.metrics.start), TEND = T0 + N * STEP;
+const SERVICES = ['auth','catalog','cart','order','payment','delivery','notification'];
+const state = {tab:'overview', range:1440, service:'order', db:'orders', trace:null, order:null,
+  logs:{service:'',level:'',text:'',trace:''}, traces:{service:'',status:'',text:''}, orders:{status:''}};
+
+/* ---------- helpers ---------- */
+const $ = (sel, el=document) => el.querySelector(sel);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const key = (name, labels={}) => name + '{' + Object.keys(labels).sort().map(k => k + '=' + labels[k]).join(',') + '}';
+const IDX = new Map(D.metrics.series.map(s => [key(s.name, s.labels), s]));
+const S = (name, labels) => IDX.get(key(name, labels));
+const hhmm = t => new Date(t).toISOString().slice(11,16);
+const dayTime = t => { const d = new Date(t).toISOString(); return d.slice(5,10) + ' ' + d.slice(11,16); };
+const fullTime = iso => iso.slice(5,10) + ' ' + iso.slice(11,23);
+const median = a => { const b = [...a].sort((x,y)=>x-y); return b.length ? b[Math.floor(b.length/2)] : 0; };
+const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
+const sum = a => a.reduce((x,y)=>x+y,0);
+const last = (s, k) => s.values.slice(-k);
+const UNIT = {'req/s':' req/s', ms:' ms', s:' s', '%':'%', MB:' MB', count:'', bool:''};
+function num(v){ const a = Math.abs(v); return a >= 100 ? Math.round(v).toLocaleString('en') : a >= 10 ? v.toFixed(1) : a >= 1 ? v.toFixed(2) : v === 0 ? '0' : v.toFixed(3); }
+const fmt = (v, unit) => num(v) + (UNIT[unit] ?? (' ' + unit));
+const winStart = () => N - state.range;
+const inWin = iso => Date.parse(iso) >= TEND - state.range * 60000;
+
+function pill(level, label){
+  const icon = {good:'✓', warning:'!', serious:'!', critical:'✕', info:'i'}[level];
+  return `<span class="pill ${level}"><span class="dot" aria-hidden="true">${icon}</span>${esc(label)}</span>`;
+}
+
+/* ---------- line chart ---------- */
+const CHARTS = [];
+function chartCard(title, series, opt={}){
+  // series: [{label, s}] ; opt: {deploys:'all'|service, yMin, yMax, note}
+  const id = 'c' + CHARTS.length;
+  CHARTS.push({id, title, series: series.filter(x => x.s), opt});
+  const first = series[0] && series[0].s;
+  let val = '';
+  if (first && series.length === 1){
+    val = `<div class="cval">now <b>${fmt(avg(last(first,5)), first.unit)}</b> · normal ${fmt(avg(first.values), first.unit)}</div>`;
+  }
+  const legend = series.length > 1 ? '<div class="legend">' + series.map((x,i) =>
+      `<span><i style="background:var(--s${i+1})"></i>${esc(x.label)}</span>`).join('') + '</div>' : '';
+  const note = opt.note || (first && first.limit ? 'max ' + fmt(first.limit, first.unit) : '');
+  return `<div class="card"><div class="chead"><span class="ctitle">${esc(title)}</span><span class="cnote">${esc(note)}</span></div>
+    ${val}${legend}<div class="chart" id="${id}"></div></div>`;
+}
+
+const tick = v => Math.abs(v) >= 1000 ? Math.round(v).toLocaleString('en') : String(+v.toFixed(4));
+function niceStep(raw){ const p = Math.pow(10, Math.floor(Math.log10(raw))); const f = raw / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; }
+
+function drawCharts(){
+  for (const c of CHARTS){ const el = document.getElementById(c.id); if (el) draw(el, c); }
+}
+
+function draw(el, c){
+  const NS = 'http://www.w3.org/2000/svg';
+  const multi = c.series.length > 1;
+  const W = Math.max(240, el.clientWidth), H = 140;
+  const m = {l:44, r: multi ? 14 + 6.2 * Math.max(...c.series.map(x => x.label.length)) : 12, t:10, b:22};
+  const pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const n = state.range, s0 = winStart();
+  const b = Math.max(1, Math.ceil(n / (pw / 1.5))), nb = Math.ceil(n / b); // average into buckets when too many points
+  const ser = c.series.map((x,i) => { const raw = x.s.values.slice(s0), v = [];
+    for (let k = 0; k < nb; k++) v.push(avg(raw.slice(k * b, k * b + b)));
+    return {...x, v, color:`var(--s${i+1})`}; });
+  const all = ser.flatMap(x => x.v);
+  let lo = c.opt.yMin, hi = c.opt.yMax;
+  if (lo === 'auto') lo = Math.min(80, Math.floor(Math.min(...all) / 10) * 10);
+  if (lo == null) lo = 0;
+  if (hi == null){ hi = Math.max(...all) * 1.15; if (hi <= lo) hi = lo + 1; }
+  const step = niceStep((hi - lo) / 3); hi = Math.ceil(hi / step) * step;
+  const X = i => m.l + (n === 1 ? 0 : i / (n - 1)) * pw;
+  const XB = k => X(Math.min(n - 1, k * b + (b - 1) / 2));
+  const Y = v => m.t + (1 - (v - lo) / (hi - lo)) * ph;
+  let g = '';
+  for (let v = lo; v <= hi + 1e-9; v += step){
+    g += `<line x1="${m.l}" x2="${m.l + pw}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v === lo ? 'var(--axis)' : 'var(--grid)'}" stroke-width="1"/>`;
+    g += `<text x="${m.l - 6}" y="${Y(v) + 3.5}" text-anchor="end">${tick(v)}</text>`;
+  }
+  const tickMin = n >= 1440 ? 360 : n >= 360 ? 60 : 15;
+  for (let i = 0; i < n; i++){
+    const t = T0 + (s0 + i) * STEP;
+    if ((t / 60000) % tickMin === 0) g += `<text x="${X(i)}" y="${H - 6}" text-anchor="middle">${hhmm(t)}</text>`;
+  }
+  const deps = D.events.filter(e => e.type === 'deploy' && (c.opt.deploys === 'all' || e.service === c.opt.deploys))
+    .map(e => ({...e, i: Math.round((Date.parse(e.ts) - T0) / STEP) - s0})).filter(e => e.i >= 0 && e.i < n);
+  for (const d of deps){
+    g += `<line x1="${X(d.i)}" x2="${X(d.i)}" y1="${m.t}" y2="${m.t + ph}" stroke="var(--muted)" stroke-dasharray="3 3"/>`;
+    g += `<text x="${X(d.i) + 3}" y="${m.t + 8}">${esc(d.service + ' ' + d.version)}</text>`;
+  }
+  for (const x of ser){
+    const d = 'M' + x.v.map((v,k) => XB(k).toFixed(1) + ' ' + Y(v).toFixed(1)).join('L');
+    g += `<path d="${d}" fill="none" stroke="${x.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }
+  if (multi){ // direct labels at line end, pushed apart
+    const ends = ser.map(x => ({label:x.label, y: Y(x.v[x.v.length-1])})).sort((a,b) => a.y - b.y);
+    for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i-1].y < 12) ends[i].y = ends[i-1].y + 12;
+    for (const e of ends) g += `<text class="dl" x="${m.l + pw + 6}" y="${e.y + 4}">${esc(e.label)}</text>`;
+  }
+  g += `<g class="hov" style="display:none"><line class="ch" y1="${m.t}" y2="${m.t + ph}" stroke="var(--axis)"/>` +
+    ser.map(x => `<circle r="4" fill="${x.color}" stroke="var(--surface)" stroke-width="2"/>`).join('') + '</g>';
+  g += `<rect x="${m.l}" y="0" width="${pw}" height="${H}" fill="transparent"/>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="${esc(c.title)}">${g}</svg><div class="tip"></div>`;
+
+  const svg = el.firstChild, hov = svg.querySelector('.hov'), tip = el.querySelector('.tip');
+  const unit = ser[0] ? ser[0].s.unit : '';
+  svg.addEventListener('pointermove', ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * (W / r.width);
+    const k = Math.max(0, Math.min(nb - 1, Math.round(((px - m.l) / pw * (n - 1) - (b - 1) / 2) / b)));
+    hov.style.display = '';
+    const line = hov.querySelector('.ch'); line.setAttribute('x1', XB(k)); line.setAttribute('x2', XB(k));
+    hov.querySelectorAll('circle').forEach((cc, j) => { cc.setAttribute('cx', XB(k)); cc.setAttribute('cy', Y(ser[j].v[k])); });
+    const pad = Math.max(1, n / 120), near = deps.find(d => d.i >= k * b - pad && d.i < k * b + b + pad);
+    const ta = T0 + (s0 + k * b) * STEP, tb = ta + Math.min(b, n - k * b) * STEP;
+    tip.innerHTML = `<div class="t">${dayTime(ta)}${b > 1 ? ' to ' + hhmm(tb) + ', avg' : ''} UTC</div>` +
+      ser.map(x => `<div class="r">${multi ? `<i style="display:inline-block;width:10px;height:3px;background:${x.color}"></i>` : ''}${esc(x.label)}<b>${fmt(x.v[k], unit)}</b></div>`).join('') +
+      (near ? `<div class="dep">Deploy: ${esc(near.service)} ${esc(near.version)}</div>` : '');
+    tip.style.display = 'block';
+    const sx = XB(k) * (r.width / W), tw = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(r.width - tw, sx + 12 + tw > r.width ? sx - tw - 12 : sx + 12)) + 'px';
+    tip.style.top = '4px';
+  });
+  svg.addEventListener('pointerleave', () => { hov.style.display = 'none'; tip.style.display = 'none'; });
+}
+
+/* ---------- health ---------- */
+function serviceHealth(svc){
+  const L = {service: svc};
+  const err = avg(last(S('http_error_rate', L), 5));
+  const p95s = S('http_latency_p95_ms', L), p95 = avg(last(p95s, 5)), p95n = avg(p95s.values);
+  const restarts = sum(last(S('pod_restarts', L), 15));
+  let level = 'good', why = 'Healthy';
+  if (err > 2 || restarts > 3){ level = 'critical'; why = err > 2 ? 'High errors' : 'Restarting'; }
+  else if (err > 1 || p95 > 2 * p95n || restarts > 0){ level = 'warning'; why = err > 1 ? 'Errors up' : p95 > 2 * p95n ? 'Slow' : 'Restarted'; }
+  return {level, why, err, p95, p95n};
+}
+
+/* ---------- tabs ---------- */
+const TABS = [['overview','Overview'],['map','System map'],['services','Services'],['deps','Dependencies'],['business','Business'],
+  ['logs','Logs'],['traces','Traces'],['orders','Orders'],['changes','Changes and alerts']];
+
+const VIEWS = {
+map(){
+  const COLS = ['auth','cart','catalog','order','payment','delivery','notification'];
+  const W = 150, G = 24, X0 = 20, lx = i => X0 + i * (W + G), cx = i => lx(i) + W / 2, col = s => COLS.indexOf(s);
+  const VW = X0 * 2 + COLS.length * W + (COLS.length - 1) * G;
+  const Y = {cl:14, gw:92, svc:232, st:388, bus:524}, H = {cl:40, gw:64, svc:76, st:84, bus:58};
+  const VH = Y.bus + H.bus + 14;
+  const ICON = {good:'✓', warning:'!', serious:'!', critical:'✕', info:'i'};
+  const COLOR = {good:'var(--good)', warning:'var(--warning)', serious:'var(--serious)', critical:'var(--critical)', info:'var(--axis)'};
+  const dot = (x, y, lvl) => `<circle class="stc" cx="${x}" cy="${y}" r="8" fill="${COLOR[lvl]}"/>` +
+    `<text class="sti" x="${x}" y="${y + 3.2}" style="fill:${lvl === 'warning' ? '#0b0b0b' : '#fff'}">${ICON[lvl]}</text>`;
+  const node = (x, y, w, h, o) => {
+    const attrs = o.go ? ` class="node go" ${o.go}` : ' class="node"';
+    let t = `<g${attrs}><title>${esc(o.tip || o.title)}</title><rect class="bx${o.cls ? ' ' + o.cls : ''}" x="${x}" y="${y}" width="${w}" height="${h}" rx="8"/>`;
+    let ty = y + 20;
+    if (o.kind){ t += `<text class="nk" x="${x + 10}" y="${y + 15}">${esc(o.kind)}</text>`; ty = y + 32; }
+    t += `<text class="nt" x="${x + 10}" y="${ty}">${esc(o.title)}</text>`;
+    (o.lines || []).forEach((l, i) => t += `<text x="${x + 10}" y="${ty + 17 + i * 15}">${esc(l)}</text>`);
+    if (o.lvl) t += dot(x + w - 14, y + 14, o.lvl);
+    return t + '</g>';
+  };
+  const path = (pts, cls = '', mk = 'm', start = false) =>
+    `<path class="e ${cls}" d="M${pts.map(p => p.join(' ')).join(' L')}" marker-end="url(#${mk})"${start ? ` marker-start="url(#${mk})"` : ''}/>`;
+  const now = (name, labels, k = 5) => avg(last(S(name, labels), k));
+  let g = `<defs>
+    <marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    <marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--s1)"/></marker></defs>`;
+
+  // clients + gateway
+  const gwX = lx(0), gwW = lx(3) + W - lx(0);
+  g += node(cx(1) - 60, Y.cl, 120, H.cl, {title:'Customer', cls:'ext'}) + node(cx(2) - 60, Y.cl, 120, H.cl, {title:'Admin', cls:'ext'});
+  g += path([[cx(1), Y.cl + H.cl], [cx(1), Y.gw]]) + path([[cx(2), Y.cl + H.cl], [cx(2), Y.gw]]);
+  const gwErr = now('http_error_rate', {service:'gateway'});
+  g += node(gwX, Y.gw, gwW, H.gw, {kind:'edge', title:'Load balancer + API gateway', lvl: gwErr > 2 ? 'critical' : gwErr > 1 ? 'warning' : 'good',
+    lines:[`${num(now('http_requests_per_second', {service:'gateway'}))} req/s · ${gwErr.toFixed(2)}% 5xx · p95 ${num(now('http_latency_p95_ms', {service:'gateway'}))} ms · checks auth, rate limit`]});
+
+  // gateway -> services (HTTP bus)
+  const busY = Y.gw + H.gw + 32;
+  g += `<path class="e" d="M${gwX + gwW / 2} ${Y.gw + H.gw} L${gwX + gwW / 2} ${busY} M${cx(0) - 34} ${busY} L${cx(5) - 34} ${busY}"/>`;
+  ['auth','cart','catalog','order','payment','delivery'].map(col).forEach(i => g += path([[cx(i) - 34, busY], [cx(i) - 34, Y.svc]]));
+  g += `<text x="${cx(0) - 28}" y="${busY - 6}">HTTP from users</text>`;
+
+  // third parties
+  const TP = [['stripe','Stripe','payments','payment'], ['carrier','Carrier','shipping','delivery'], ['email','Email provider','sends email','notification']];
+  for (const [p, title, what, svc] of TP){
+    const i = col(svc), e = now('third_party_error_rate', {provider:p});
+    g += node(lx(i), Y.gw, W, H.gw, {kind:'external', title, cls:'ext', lvl: e > 5 ? 'critical' : e > 2 ? 'warning' : 'good',
+      lines:[`p95 ${num(now('third_party_latency_p95_ms', {provider:p}))} ms · ${e.toFixed(2)}% err`]});
+    g += path([[cx(i) + 14, Y.svc], [cx(i) + 14, Y.gw + H.gw]]);
+    if (p !== 'email') g += path([[cx(i) + 44, Y.gw + H.gw], [cx(i) + 44, Y.svc]], 'wh');
+  }
+
+  // services
+  for (const svc of COLS){
+    const i = col(svc), L = {service:svc}, hh = serviceHealth(svc);
+    g += node(lx(i), Y.svc, W, H.svc, {title:svc, lvl:hh.level, go:`data-go-service="${svc}"`, tip:`${svc}: ${hh.why}. Click for details.`,
+      lines:[`${num(now('http_requests_per_second', L))} req/s · ${hh.err.toFixed(2)}% 5xx`, `p95 ${num(hh.p95)} ms`]});
+  }
+  // service -> service (order calls catalog and payment)
+  const midY = Y.svc + 30;
+  g += path([[lx(col('order')), midY], [lx(col('catalog')) + W, midY]]);
+  g += path([[lx(col('order')) + W, midY], [lx(col('payment')), midY]]);
+
+  // data stores
+  const STORES = [['auth','users'], ['catalog','catalog'], ['order','orders'], ['payment','payments'], ['delivery','shipments']];
+  for (const [svc, db] of STORES){
+    const i = col(svc), c = S('pg_connections_used', {db}), up = last(S('pg_up', {db}), 1)[0], used = last(c, 1)[0];
+    const lines = [`conn ${used}/${c.limit}`, `p95 ${num(now('pg_query_p95_ms', {db}))} ms`];
+    if (db === 'catalog') lines.push(`replica lag ${num(now('pg_replication_lag_s', {db}))} s`);
+    g += node(lx(i), Y.st, W, H.st, {kind:'postgres', title:db + (db === 'catalog' ? ' + replica' : ''), lines,
+      lvl: !up ? 'critical' : used > 0.8 * c.limit ? 'serious' : 'good', go:`data-tab="deps" data-db="${db}"`, tip:`Postgres ${db}. Click for details.`});
+    g += path([[cx(i), Y.svc + H.svc], [cx(i), Y.st]], '', 'm', true);
+  }
+  { const i = col('cart'), m = S('redis_memory_used_mb'), mv = now('redis_memory_used_mb');
+    g += node(lx(i), Y.st, W, H.st, {kind:'redis', title:'carts', lines:[`${Math.round(mv)} / ${m.limit} MB`],
+      lvl: !last(S('redis_up'), 1)[0] ? 'critical' : mv > 0.85 * m.limit ? 'warning' : 'good', go:'data-tab="deps"', tip:'Redis. Click for details.'});
+    g += path([[cx(i), Y.svc + H.svc], [cx(i), Y.st]], '', 'm', true); }
+
+  // kafka
+  const K = D.topology.kafka, groups = Object.keys(K.consumer_groups);
+  const maxLag = Math.max(...groups.map(x => last(S('kafka_consumer_lag', {group:x}), 1)[0]));
+  const dlq = groups.map(x => S('kafka_dlq_size', {group:x}).values);
+  const dlqNow = sum(dlq.map(v => v[N - 1])), dlqGrow = sum(dlq.map(v => v[N - 1] - v[N - 16]));
+  g += node(X0, Y.bus, VW - 2 * X0, H.bus, {kind:'kafka (events)', title:K.topics.join('  ·  '), cls:'bus', go:'data-tab="deps"',
+    lvl: maxLag > 1000 ? 'serious' : dlqGrow > 0 ? 'warning' : 'good', tip:'Kafka. Click for details.',
+    lines:[`max consumer lag ${maxLag} · DLQ ${dlqNow}${dlqGrow > 0 ? ' (growing)' : ' (flat)'}`]});
+  const prod = new Set(Object.values(K.producers)), cons = new Set(groups);
+  for (const svc of COLS){
+    if (!prod.has(svc) && !cons.has(svc)) continue;
+    const i = col(svc), hasStore = svc !== 'notification';
+    const xp = hasStore ? lx(i) + W + 7 : cx(i) - 14, xc = hasStore ? lx(i) + W + 17 : cx(i) + 14;
+    if (prod.has(svc)) g += hasStore ? path([[lx(i) + W, Y.svc + 50], [xp, Y.svc + 50], [xp, Y.bus]], 'k', 'mk') : path([[xp, Y.svc + H.svc], [xp, Y.bus]], 'k', 'mk');
+    if (cons.has(svc)) g += hasStore ? path([[xc, Y.bus], [xc, Y.svc + 64], [lx(i) + W, Y.svc + 64]], 'k', 'mk') : path([[xc, Y.bus], [xc, Y.svc + H.svc]], 'k', 'mk');
+  }
+
+  let h = '<h2>How the parts connect, now</h2><div class="mapwrap"><svg class="map" viewBox="0 0 ' + VW + ' ' + VH + '" role="img" aria-label="System map with the health of each part">' + g + '</svg></div>';
+  const ln = (dash, color) => `<svg width="34" height="10" aria-hidden="true"><line x1="0" y1="5" x2="34" y2="5" stroke="${color}" stroke-width="1.6" ${dash}/></svg>`;
+  h += `<div class="lg"><span>${ln('', 'var(--muted)')}HTTP call</span><span>${ln('stroke-dasharray="5 4"', 'var(--muted)')}Webhook (comes in through the gateway)</span>
+    <span>${ln('', 'var(--s1)')}Kafka: arrow to the bus = publishes, arrow from the bus = reads</span><span>Dashed box = outside our system</span>
+    <span>Click a service or a store for details</span></div>`;
+
+  // who talks to whom
+  const HOW = {http:'HTTP', webhook:'Webhook', db:'Database'}, rows = [];
+  for (const e of D.topology.edges) rows.push([e.from, e.to, HOW[e.type] || e.type, e.note || '']);
+  for (const [t, p] of Object.entries(K.producers)) rows.push([p, 'kafka', 'Publishes', t]);
+  for (const [gname, ts] of Object.entries(K.consumer_groups)) rows.push(['kafka', gname, 'Reads', ts.join(', ')]);
+  h += '<h2>Who talks to whom</h2><div class="tw"><table><thead><tr><th>From</th><th>To</th><th>How</th><th>Details</th></tr></thead><tbody>' +
+    rows.map(r => `<tr><td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td class="mono">${esc(r[3])}</td></tr>`).join('') + '</tbody></table></div>';
+
+  // main flows
+  const ex = root => { const t = D.traces.find(x => x.root === root && x.status === 'ok' && x.spans.length > 3); return t ? 'example ' + tlink(t.trace_id) : ''; };
+  const FLOWS = [
+    ['Browse products', 'GET /products', ['Customer → Gateway → Catalog.', 'Catalog reads from the Postgres replica.', 'Images come from the CDN (not tracked).']],
+    ['Checkout', 'POST /checkout', ['Gateway → Order. Order saves the order (status NEW).', 'Order → Catalog: reserve stock.', 'Order → Payment → Stripe: create the payment.',
+      'Order sets status PENDING and writes <code>order.created</code> to the outbox.', 'Kafka → Notification: email "order received".']],
+    ['Payment confirmed', 'POST /webhooks/stripe', ['Stripe webhook → Gateway → Payment. Payment publishes <code>payment.succeeded</code>.',
+      'Order reads it, sets status PAID and publishes <code>order.paid</code>.', 'Notification reads it: email "order confirmed".',
+      'Delivery reads it, books the carrier and publishes <code>delivery.updated</code>.']],
+    ['Shipping updates', 'POST /webhooks/carrier', ['Carrier webhook → Gateway → Delivery. Delivery publishes <code>delivery.updated</code>.',
+      'Order reads it and sets status SHIPPED or DELIVERED.', 'Notification reads it: email "shipped" or "delivered".']],
+  ];
+  h += '<h2>Main flows</h2><div class="grid">' + FLOWS.map(([t, root, steps]) =>
+    `<div class="card"><div class="chead"><span class="ctitle">${t}</span><span class="cnote">${ex(root)}</span></div><ol class="flow">` +
+    steps.map(x => `<li>${x}</li>`).join('') + '</ol></div>').join('') + '</div>';
+  return h;
+},
+
+overview(){
+  const tile = (label, value, normal, level, status) => `<div class="card tile"><div class="lbl">${label}</div>
+    <div class="big">${value}</div><div class="nrm">${normal}</div>${pill(level, status)}</div>`;
+  const cs = S('checkout_success_rate'), ps = S('payment_success_rate'), st = S('orders_stuck_pending_15m'), ef = S('emails_failed_per_min');
+  const csv = avg(last(cs, 15)), psv = avg(last(ps, 15)), stv = last(st, 1)[0], efv = sum(last(ef, 60));
+  const firing = D.alerts.firing.length;
+  let h = '<h2>Is the shop healthy now?</h2><div class="tiles">' +
+    tile('Checkout success, last 15 min', csv.toFixed(1) + '%', 'normal ' + avg(cs.values).toFixed(1) + '%', csv >= 90 ? 'good' : 'critical', csv >= 90 ? 'Normal' : 'Low') +
+    tile('Payment success, last 15 min', psv.toFixed(1) + '%', 'normal ' + avg(ps.values).toFixed(1) + '%', psv >= 90 ? 'good' : 'critical', psv >= 90 ? 'Normal' : 'Low') +
+    tile('Orders stuck in PENDING > 15 min', stv, 'normal 0', stv <= 5 ? 'good' : 'critical', stv <= 5 ? 'Normal' : 'Too many') +
+    tile('Failed emails, last 1 h', efv, 'normal ' + Math.round(avg(ef.values) * 60), efv <= 10 ? 'good' : 'warning', efv <= 10 ? 'Normal' : 'High') +
+    tile('Alerts firing', firing, D.alerts.rules.length + ' rules', firing ? 'critical' : 'good', firing ? 'Firing' : 'None') +
+    '</div>';
+  h += '<h2>Services, last 5 min</h2><div class="tw"><table><thead><tr><th>Service</th><th>Status</th><th class="n">Req/s</th><th class="n">5xx</th><th class="n">p95</th><th class="n">p95 normal</th><th class="n">CPU</th><th class="n">Memory</th><th>Last deploy</th></tr></thead><tbody>';
+  for (const svc of SERVICES){
+    const L = {service: svc}, hh = serviceHealth(svc), dep = D.events.filter(e => e.type === 'deploy' && e.service === svc).pop();
+    const mem = S('memory_mb', L);
+    h += `<tr class="click" data-go-service="${svc}"><td><b>${svc}</b></td><td>${pill(hh.level, hh.why)}</td>
+      <td class="n">${num(avg(last(S('http_requests_per_second', L), 5)))}</td><td class="n">${hh.err.toFixed(2)}%</td>
+      <td class="n">${num(hh.p95)} ms</td><td class="n">${num(hh.p95n)} ms</td>
+      <td class="n">${avg(last(S('cpu_pct', L), 5)).toFixed(0)}%</td><td class="n">${Math.round(avg(last(mem, 5)))} / ${mem.limit} MB</td>
+      <td class="nw">${dep ? esc(dep.version) + ' · ' + dayTime(Date.parse(dep.ts)) : '—'}</td></tr>`;
+  }
+  h += '</tbody></table></div>';
+  const G = {service:'gateway'};
+  h += '<h2>Gateway</h2><div class="grid">' +
+    chartCard('Requests per second', [{label:'req/s', s:S('http_requests_per_second', G)}], {deploys:'all'}) +
+    chartCard('5xx error rate', [{label:'5xx', s:S('http_error_rate', G)}], {deploys:'all'}) +
+    chartCard('4xx rate (normal: 401, 402, 404, 429)', [{label:'4xx', s:S('http_4xx_rate', G)}], {deploys:'all'}) +
+    chartCard('Latency p95', [{label:'p95', s:S('http_latency_p95_ms', G)}], {deploys:'all'}) + '</div>';
+  h += '<h2>About this data</h2><div class="card"><ul class="notes">' + D.meta.notes.map(x => `<li>${esc(x)}</li>`).join('') + '</ul></div>';
+  return h;
+},
+
+services(){
+  const svc = state.service, L = {service: svc};
+  const SPEC = {
+    auth: [['Login success rate', 'auth_login_success_rate', {}, {yMin:'auto', yMax:100}], ['Failed logins, max per IP', 'auth_failed_logins_max_per_ip'],
+           ['Signups per minute', 'auth_signups_per_min'], ['Token refresh errors per minute', 'auth_token_refresh_errors_per_min']],
+    catalog: [['Product page p95', 'catalog_product_page_p95_ms'], ['Replica lag', 'pg_replication_lag_s', {db:'catalog'}],
+              ['Stock reserve failures per minute', 'catalog_stock_reserve_failures_per_min'], ['Admin changes per minute', 'catalog_admin_changes_per_min']],
+    cart: [['Add / remove errors per minute', 'cart_errors_per_min'], ['Redis latency p95', 'redis_latency_p95_ms'], ['Redis memory', 'redis_memory_used_mb']],
+    order: [['Checkout success rate', 'checkout_success_rate', {}, {yMin:'auto', yMax:100}], ['Orders in PENDING', 'orders_pending'],
+            ['Orders stuck in PENDING > 15 min', 'orders_stuck_pending_15m'], ['Events not yet published (outbox)', 'order_outbox_unpublished']],
+    payment: [['Payment success rate', 'payment_success_rate', {}, {yMin:'auto', yMax:100}], ['Stripe latency p95', 'third_party_latency_p95_ms', {provider:'stripe'}],
+              ['Stripe webhooks per minute', 'webhooks_received_per_min', {provider:'stripe'}], ['Bad webhook signatures per minute', 'webhook_bad_signatures_per_min', {provider:'stripe'}]],
+    delivery: [['Carrier API error rate', 'third_party_error_rate', {provider:'carrier'}], ['Carrier status updates per minute', 'webhooks_received_per_min', {provider:'carrier'}],
+               ['Shipments with no update > 24h', 'delivery_shipments_no_update_24h'], ['Late deliveries', 'delivery_late_pct']],
+    notification: [['Emails sent per minute', 'emails_sent_per_min'], ['Emails failed per minute', 'emails_failed_per_min'], ['Bounces per minute', 'email_bounces_per_min'],
+                   ['Kafka consumer lag', 'kafka_consumer_lag', {group:'notification'}], ['Event to email p95', 'notification_event_to_email_p95_s']],
+  };
+  let h = '<div class="chips" role="group" aria-label="Service">' + SERVICES.map(s =>
+    `<button data-service="${s}" aria-pressed="${s === svc}">${s}</button>`).join('') + '</div>';
+  const hh = serviceHealth(svc);
+  h += `<h2>${svc} ${pill(hh.level, hh.why)}</h2><div class="grid">` +
+    chartCard('Requests per second', [{label:'req/s', s:S('http_requests_per_second', L)}], {deploys:svc}) +
+    chartCard('5xx error rate', [{label:'5xx', s:S('http_error_rate', L)}], {deploys:svc}) +
+    chartCard('Latency', [{label:'p95', s:S('http_latency_p95_ms', L)}, {label:'p99', s:S('http_latency_p99_ms', L)}], {deploys:svc}) +
+    chartCard('CPU', [{label:'CPU', s:S('cpu_pct', L)}], {deploys:svc}) +
+    chartCard('Memory', [{label:'memory', s:S('memory_mb', L)}], {deploys:svc}) +
+    chartCard('Pod restarts per minute', [{label:'restarts', s:S('pod_restarts', L)}], {deploys:svc, note: last(S('pods_ready', L),1)[0] + ' pods ready'}) +
+    '</div><h2>Service signals</h2><div class="grid">' +
+    SPEC[svc].map(([t, name, labels, opt]) => chartCard(t, [{label:t, s:S(name, labels || {})}], {deploys:svc, ...(opt || {})})).join('') + '</div>';
+  const eps = D.topology.endpoints.filter(e => e.service === svc);
+  h += '<h2>Endpoints (normal values)</h2><div class="tw"><table><thead><tr><th>Route</th><th class="n">Share of traffic</th><th class="n">p95</th><th class="n">5xx</th></tr></thead><tbody>' +
+    eps.map(e => `<tr><td class="mono">${esc(e.route)}</td><td class="n">${Math.round(e.share * 100)}%</td><td class="n">${e.p95_ms} ms</td><td class="n">${e.error_pct.toFixed(2)}%</td></tr>`).join('') +
+    '</tbody></table></div>';
+  return h;
+},
+
+deps(){
+  const dbs = ['users','catalog','orders','payments','shipments'], db = state.db, L = {db};
+  let h = '<h2>Postgres</h2><div class="tw"><table><thead><tr><th>Database</th><th>Status</th><th class="n">Query p95</th><th class="n">Connections</th><th class="n">Disk used</th></tr></thead><tbody>' +
+    dbs.map(d => { const up = last(S('pg_up', {db:d}), 1)[0], c = S('pg_connections_used', {db:d});
+      return `<tr class="click${d === db ? ' on' : ''}" data-db="${d}"><td><b>${d}</b></td><td>${up ? pill('good','Up') : pill('critical','Down')}</td>
+      <td class="n">${num(avg(last(S('pg_query_p95_ms', {db:d}), 5)))} ms</td><td class="n">${last(c,1)[0]} / ${c.limit}</td>
+      <td class="n">${last(S('pg_disk_used_pct', {db:d}), 1)[0].toFixed(1)}%</td></tr>`; }).join('') + '</tbody></table></div>';
+  h += `<h2>Postgres: ${db}</h2><div class="grid">` +
+    chartCard('Query latency p95', [{label:'p95', s:S('pg_query_p95_ms', L)}]) +
+    chartCard('Connections used', [{label:'used', s:S('pg_connections_used', L)}]) +
+    chartCard('Disk used', [{label:'disk', s:S('pg_disk_used_pct', L)}], {yMax:100}) +
+    chartCard('Slow queries per minute', [{label:'slow', s:S('pg_slow_queries_per_min', L)}]) +
+    (db === 'catalog' ? chartCard('Replication lag', [{label:'lag', s:S('pg_replication_lag_s', L)}]) : '') + '</div>';
+  h += '<h2>Redis</h2><div class="grid">' +
+    chartCard('Memory used', [{label:'memory', s:S('redis_memory_used_mb')}]) +
+    chartCard('Latency p95', [{label:'p95', s:S('redis_latency_p95_ms')}]) + '</div>';
+  const groups = ['order','delivery','notification'], topics = D.topology.kafka.topics;
+  h += '<h2>Kafka</h2><div class="grid">' +
+    chartCard('Consumer lag (messages)', groups.map(g => ({label:g, s:S('kafka_consumer_lag', {group:g})}))) +
+    chartCard('Messages in per minute', topics.map(t => ({label:t, s:S('kafka_messages_in_per_min', {topic:t})}))) + '</div>';
+  h += '<div class="tw" style="margin-top:12px"><table><thead><tr><th>Consumer group</th><th>Reads</th><th class="n">Lag now</th><th class="n">DLQ size</th><th class="n">DLQ change, 1 h</th></tr></thead><tbody>' +
+    groups.map(g => { const q = S('kafka_dlq_size', {group:g}).values, ch = q[N-1] - q[N-61];
+      return `<tr><td><b>${g}</b></td><td class="mono">${D.topology.kafka.consumer_groups[g].join(', ')}</td><td class="n">${last(S('kafka_consumer_lag',{group:g}),1)[0]}</td>
+      <td class="n">${q[N-1]}</td><td class="n">${ch > 0 ? '+' + ch : ch}</td></tr>`; }).join('') + '</tbody></table></div>';
+  const P = ['stripe','carrier','email'];
+  h += '<h2>Third parties</h2><div class="grid">' +
+    chartCard('Latency p95', P.map(p => ({label:p, s:S('third_party_latency_p95_ms', {provider:p})}))) +
+    chartCard('Error rate', P.map(p => ({label:p, s:S('third_party_error_rate', {provider:p})}))) +
+    chartCard('Requests per minute', P.map(p => ({label:p, s:S('third_party_requests_per_min', {provider:p})}))) + '</div>';
+  const nodes = [1,2,3,4].map(i => 'node-' + i);
+  h += '<h2>Nodes</h2><div class="grid">' +
+    chartCard('Node CPU', nodes.map(x => ({label:x, s:S('node_cpu_pct', {node:x})}))) +
+    `<div class="card"><div class="ctitle">Node status</div><table><tbody>` +
+    nodes.map(x => `<tr><td>${x}</td><td>${last(S('node_up',{node:x}),1)[0] ? pill('good','Up') : pill('critical','Down')}</td></tr>`).join('') + '</tbody></table></div></div>';
+  return h;
+},
+
+business(){
+  return '<h2>Orders and payments</h2><div class="grid">' +
+    chartCard('Checkout attempts per minute', [{label:'attempts', s:S('checkout_attempts_per_min')}], {deploys:'all'}) +
+    chartCard('Checkout success rate', [{label:'success', s:S('checkout_success_rate')}], {deploys:'all', yMin:'auto', yMax:100}) +
+    chartCard('Payment success rate', [{label:'success', s:S('payment_success_rate')}], {deploys:'all', yMin:'auto', yMax:100}) +
+    chartCard('Orders stuck in PENDING > 15 min', [{label:'stuck', s:S('orders_stuck_pending_15m')}], {deploys:'all'}) +
+    '</div><h2>Emails and users</h2><div class="grid">' +
+    chartCard('Emails sent per minute', [{label:'sent', s:S('emails_sent_per_min')}], {deploys:'all'}) +
+    chartCard('Emails failed per minute', [{label:'failed', s:S('emails_failed_per_min')}], {deploys:'all'}) +
+    chartCard('Login success rate', [{label:'success', s:S('auth_login_success_rate')}], {deploys:'all', yMin:'auto', yMax:100}) +
+    chartCard('Signups per minute', [{label:'signups', s:S('auth_signups_per_min')}], {deploys:'all'}) + '</div>';
+},
+
+logs(){
+  const f = state.logs;
+  const opt = (v, cur, label) => `<option value="${v}"${v === cur ? ' selected' : ''}>${label}</option>`;
+  let h = `<div class="filters">
+    <select data-lf="service" aria-label="Service">${opt('', f.service, 'All services')}${['gateway', ...SERVICES].map(s => opt(s, f.service, s)).join('')}</select>
+    <select data-lf="level" aria-label="Level">${opt('', f.level, 'All levels')}${['info','warn','error'].map(s => opt(s, f.level, s)).join('')}</select>
+    <input type="text" data-lf="text" placeholder="Search message or fields" value="${esc(f.text)}">
+    <input type="text" data-lf="trace" placeholder="trace_id" value="${esc(f.trace)}">
+    <span class="count" id="logCount"></span></div><div class="tw scroll" id="logTable"></div>`;
+  return h;
+},
+
+traces(){
+  const f = state.traces;
+  const opt = (v, cur, label) => `<option value="${v}"${v === cur ? ' selected' : ''}>${label}</option>`;
+  return `<div class="filters">
+    <select data-tf="service" aria-label="Service">${opt('', f.service, 'All services')}${['gateway', ...SERVICES].map(s => opt(s, f.service, s)).join('')}</select>
+    <select data-tf="status" aria-label="Status">${opt('', f.status, 'All statuses')}${opt('ok', f.status, 'ok')}${opt('error', f.status, 'error')}</select>
+    <input type="text" data-tf="text" placeholder="Route, e.g. checkout" value="${esc(f.text)}">
+    <span class="count" id="trCount"></span></div>
+    <div class="split"><div class="tw scroll" id="trList"></div><div class="card" id="trDetail"></div></div>`;
+},
+
+orders(){
+  const st = ['','PENDING','PAID','SHIPPED','DELIVERED','PAYMENT_FAILED'];
+  return '<div class="chips" role="group" aria-label="Order status">' + st.map(s =>
+    `<button data-ostatus="${s}" aria-pressed="${s === state.orders.status}">${s || 'All'}</button>`).join('') + '</div>' +
+    '<div class="split"><div class="tw scroll" id="orList"></div><div class="card" id="orDetail"></div></div>';
+},
+
+changes(){
+  let h = '<h2>Changes</h2><div class="tw"><table><thead><tr><th>Time (UTC)</th><th>Type</th><th>Service</th><th>Version</th><th>What</th><th>By</th></tr></thead><tbody>' +
+    D.events.map(e => `<tr><td class="nw">${fullTime(e.ts).slice(0,11)}</td><td>${e.type}</td><td><b>${esc(e.service)}</b></td>
+      <td class="mono">${e.version ? esc(e.previous + ' → ' + e.version) : '—'}</td><td>${esc(e.summary)}</td><td>${esc(e.by)}</td></tr>`).join('') + '</tbody></table></div>';
+  h += `<h2>Alert rules · ${D.alerts.firing.length} firing</h2><div class="tw"><table><thead><tr><th>Name</th><th>Rule</th><th>Severity</th><th>State</th></tr></thead><tbody>` +
+    D.alerts.rules.map(r => `<tr><td><b>${esc(r.name)}</b></td><td class="mono">${esc(r.rule)}</td><td>${esc(r.severity)}</td>
+      <td>${r.state === 'ok' ? pill('good','OK') : pill(r.severity, 'Firing')}</td></tr>`).join('') + '</tbody></table></div>';
+  return h;
+},
+};
+
+/* ---------- dynamic parts ---------- */
+const LEVEL = {info:['info','info'], warn:['warning','warn'], error:['critical','error']};
+const OMIT = new Set(['ts','service','level','msg','trace_id','span_id']);
+const fieldsOf = e => Object.entries(e).filter(([k]) => !OMIT.has(k)).map(([k,v]) => k + '=' + (typeof v === 'object' ? JSON.stringify(v) : v)).join(' ');
+const tlink = id => id ? `<a class="lnk" data-trace="${id}">${id.slice(0,8)}</a>` : '';
+const olinks = txt => esc(txt).replace(/ord_[A-Z0-9]{6}/g, m => `<a class="lnk" data-order="${m}">${m}</a>`);
+
+function logRows(list){
+  return '<table><thead><tr><th>Time (UTC)</th><th>Service</th><th>Level</th><th>Message</th><th>Fields</th><th>Trace</th></tr></thead><tbody>' +
+    list.map(e => `<tr><td class="nw mono">${fullTime(e.ts)}</td><td>${e.service}</td><td>${pill(...LEVEL[e.level])}</td>
+      <td>${esc(e.msg)}</td><td class="fields">${olinks(fieldsOf(e))}</td><td>${tlink(e.trace_id)}</td></tr>`).join('') + '</tbody></table>';
+}
+
+function renderLogs(){
+  const f = state.logs, q = f.text.toLowerCase(), tq = f.trace.trim();
+  const hits = D.logs.filter(e => (tq ? e.trace_id && e.trace_id.startsWith(tq) : inWin(e.ts)) && (!f.service || e.service === f.service) &&
+    (!f.level || e.level === f.level) && (!q || (e.msg + ' ' + fieldsOf(e)).toLowerCase().includes(q)));
+  const show = hits.slice(-400).reverse();
+  $('#logCount').textContent = `${hits.length.toLocaleString('en')} lines${hits.length > 400 ? ', newest 400 shown' : ''}${tq ? '' : ' in range'}`;
+  $('#logTable').innerHTML = show.length ? logRows(show) : '<div class="empty">No log lines match.</div>';
+}
+
+function renderTraces(){
+  const f = state.traces, q = f.text.toLowerCase();
+  const hits = D.traces.filter(t => inWin(t.start) && (!f.service || t.services.includes(f.service)) &&
+    (!f.status || t.status === f.status) && (!q || t.root.toLowerCase().includes(q)));
+  const show = hits.slice(-300).reverse();
+  $('#trCount').textContent = `${hits.length.toLocaleString('en')} traces in range${hits.length > 300 ? ', newest 300 shown' : ''}`;
+  $('#trList').innerHTML = show.length ? '<table><thead><tr><th>Time (UTC)</th><th>Root</th><th class="n">Duration</th><th class="n">Spans</th><th>Status</th></tr></thead><tbody>' +
+    show.map(t => `<tr class="click${t.trace_id === state.trace ? ' on' : ''}" data-trace="${t.trace_id}"><td class="nw mono">${fullTime(t.start).slice(0,14)}</td>
+      <td class="mono">${esc(t.root)}</td><td class="n">${num(t.duration_ms)} ms</td><td class="n">${t.spans.length}</td>
+      <td>${t.status === 'ok' ? pill('good', String(t.http_status)) : t.http_status < 500 ? pill('warning', t.http_status + ', retry') : pill('critical', 'error ' + t.http_status)}</td></tr>`).join('') + '</tbody></table>'
+    : '<div class="empty">No traces match.</div>';
+  renderTraceDetail();
+}
+
+function renderTraceDetail(){
+  const el = $('#trDetail'); if (!el) return;
+  const t = D.traces.find(x => x.trace_id === state.trace);
+  if (!t){ el.innerHTML = '<div class="empty">Select a trace to see its spans and logs.</div>'; return; }
+  const byId = new Map(t.spans.map(s => [s.span_id, s]));
+  const depth = s => { let d = 0, p = s; while (p.parent_id && byId.has(p.parent_id)){ d++; p = byId.get(p.parent_id); } return d; };
+  const total = Math.max(t.total_ms, 1);
+  const rows = t.spans.map(s => {
+    const left = s.offset_ms / total * 100, w = Math.max(s.duration_ms / total * 100, 0.3);
+    const a = Object.entries(s.attrs).map(([k,v]) => k + '=' + v).join(' ');
+    const lbl = left + w > 70 ? `right:${100 - left + 1}%` : `left:${left + w + 1}%`;
+    return `<div class="row" title="${esc(a)}"><div class="nm" style="padding-left:${depth(s) * 12}px"><b>${esc(s.service)}</b> ${esc(s.name)}</div>
+      <div class="track"><div class="sp${s.status === 'error' ? ' err' : ''}" style="left:${left}%;width:${w}%"></div>
+      <span class="dur" style="${lbl}">${num(s.duration_ms)} ms</span></div></div>`;
+  }).join('');
+  const orderId = t.spans.map(s => s.attrs.order_id).find(Boolean);
+  const logs = D.logs.filter(e => e.trace_id === t.trace_id);
+  el.innerHTML = `<div class="kv"><span>Trace</span><span class="mono">${t.trace_id}</span><span>Root</span><span class="mono">${esc(t.root)}</span>
+    <span>Start</span><span>${fullTime(t.start)} UTC</span><span>Request time</span><span>${num(t.duration_ms)} ms</span>
+    <span>Whole story</span><span>${num(t.total_ms)} ms (includes Kafka consumers)</span>
+    ${orderId ? `<span>Order</span><span><a class="lnk" data-order="${orderId}">${orderId}</a></span>` : ''}</div>
+    <div class="wf">${rows}</div><h2>Logs for this trace</h2><div class="tw">${logs.length ? logRows(logs) : '<div class="empty">No logs.</div>'}</div>`;
+}
+
+function renderOrders(){
+  const st = state.orders.status;
+  const list = D.orders.filter(o => !st || o.status === st).slice().reverse();
+  const level = s => s === 'PAYMENT_FAILED' ? 'warning' : s === 'PENDING' ? 'info' : 'good';
+  $('#orList').innerHTML = '<table><thead><tr><th>Order</th><th>Created (UTC)</th><th>Status</th><th class="n">Amount</th></tr></thead><tbody>' +
+    list.map(o => `<tr class="click${o.order_id === state.order ? ' on' : ''}" data-order="${o.order_id}"><td class="mono">${o.order_id}</td>
+      <td class="nw mono">${fullTime(o.created_at).slice(0,11)}</td><td>${pill(level(o.status), o.status)}</td>
+      <td class="n">${o.amount.toFixed(2)} ${o.currency}</td></tr>`).join('') + '</tbody></table>';
+  const o = D.orders.find(x => x.order_id === state.order), el = $('#orDetail');
+  if (!o){ el.innerHTML = '<div class="empty">Select an order to see its timeline.</div>'; return; }
+  el.innerHTML = `<div class="kv"><span>Order</span><span class="mono">${o.order_id}</span><span>User</span><span class="mono">${o.user_id}</span>
+    <span>Status</span><span>${pill(level(o.status), o.status)}</span><span>Amount</span><span>${o.amount.toFixed(2)} ${o.currency}, ${o.items} items</span></div>
+    <table><thead><tr><th>Time (UTC)</th><th>Service</th><th>Event</th><th>Trace</th></tr></thead><tbody>` +
+    o.timeline.map(e => `<tr><td class="nw mono">${fullTime(e.ts)}</td><td>${e.service}</td><td>${esc(e.event)}</td><td>${tlink(e.trace_id)}</td></tr>`).join('') +
+    '</tbody></table>';
+}
+
+/* ---------- render + events ---------- */
+function render(){
+  CHARTS.length = 0;
+  const h = '#' + state.tab + (state.tab === 'traces' && state.trace ? '/' + state.trace : state.tab === 'orders' && state.order ? '/' + state.order : '');
+  if (location.hash !== h) history.replaceState(null, '', h);
+  $('#tabs').innerHTML = TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${k === state.tab}">${l}</button>`).join('');
+  document.querySelectorAll('#range button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.r === state.range)));
+  $('#main').innerHTML = VIEWS[state.tab]();
+  drawCharts();
+  if (state.tab === 'logs') renderLogs();
+  if (state.tab === 'traces') renderTraces();
+  if (state.tab === 'orders') renderOrders();
+}
+
+{ const [tab, id] = location.hash.slice(1).split('/');
+  if (VIEWS[tab]) state.tab = tab;
+  if (tab === 'traces' && id) state.trace = id;
+  if (tab === 'orders' && id) state.order = id; }
+$('#scn').textContent = `Scenario: ${D.meta.scenario} · ${dayTime(T0)} → ${dayTime(TEND)} UTC · seed ${D.meta.seed}`;
+$('#alertBadge').innerHTML = D.alerts.firing.length ? pill('critical', D.alerts.firing.length + ' alerts firing') : pill('good', 'No alerts firing');
+
+document.addEventListener('click', ev => {
+  const t = ev.target.closest('[data-tab],[data-r],[data-service],[data-go-service],[data-db],[data-trace],[data-order],[data-ostatus]');
+  if (!t) return;
+  const d = t.dataset;
+  if (d.tab){ state.tab = d.tab; if (d.db) state.db = d.db; }
+  else if (d.r) state.range = +d.r;
+  else if (d.service) state.service = d.service;
+  else if (d.goService){ state.service = d.goService; state.tab = 'services'; }
+  else if (d.db) state.db = d.db;
+  else if (d.trace){ state.trace = d.trace; if (state.tab !== 'traces'){ state.tab = 'traces'; state.traces = {service:'', status:'', text:''}; }
+    else { document.querySelectorAll('#trList tr.on').forEach(r => r.classList.remove('on')); t.closest('tr') && t.closest('tr').classList.add('on'); renderTraceDetail(); return; } }
+  else if (d.order){ state.order = d.order; state.tab = 'orders'; state.orders.status = ''; }
+  else if (d.ostatus !== undefined) state.orders.status = d.ostatus;
+  render();
+  if (d.tab || d.goService || d.order || (d.trace && state.tab === 'traces')) window.scrollTo(0, 0);
+});
+document.addEventListener('input', ev => {
+  const t = ev.target;
+  if (t.dataset.lf){ state.logs[t.dataset.lf] = t.value; renderLogs(); }
+  if (t.dataset.tf){ state.traces[t.dataset.tf] = t.value; renderTraces(); }
+});
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(drawCharts, 150); });
+render();
+}
+</script>
+</body>
+</html>

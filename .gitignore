@@ -1,0 +1,4 @@
+# Made by: python seed/generate.py
+data/
+__pycache__/
+*.pyc
