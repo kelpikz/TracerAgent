@@ -1,0 +1,29 @@
+{
+  "id": "smoke",
+  "title": "Smoke test",
+  "description": "Checks that the harness, graders, and pi judge work.",
+  "scenario": "baseline",
+  "noise": [],
+  "input": "Are there any firing alerts right now?",
+  "tags": ["smoke"],
+  "timeout_s": 30,
+  "info": {
+    "failure": "There is no failure. The baseline scenario has no firing alerts.",
+    "trigger": "The user asks which alerts are firing. The case uses the baseline scenario without noise.",
+    "affected": [],
+    "signals": [
+      {
+        "source": "alert",
+        "where": "Alert rules and history",
+        "what": "The dashboard shows zero firing alerts. All rules show **OK**, and the alert history is empty.",
+        "when": "Nov 19, 12:00 to Nov 20, 12:00 UTC",
+        "dashboard": "#changes"
+      }
+    ],
+    "expected": {
+      "root_cause": "There is no active incident. Call `list_alerts` with `state: firing` to check.",
+      "impact": "The alert result has no active alerts to report.",
+      "next_steps": "Answer in one to three sentences and use at most 40 words. For example, **No alerts are firing.**"
+    }
+  }
+}

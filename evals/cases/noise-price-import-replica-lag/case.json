@@ -1,0 +1,82 @@
+{
+  "id": "noise-price-import-replica-lag",
+  "title": "Replica lag during the price import",
+  "description": "Find the cause of the Catalog replica lag. Check if the lag cleared and if checkout was affected.",
+  "scenario": "noisy",
+  "noise": ["price_import"],
+  "input": "ReplicaLagHigh [serious] at 2026-11-20 00:39 UTC\npg_replication_lag_s{db=catalog} 36s > 30s for 5m\n\nFind the cause, check customer impact, and tell me if we need to act.",
+  "tags": ["catalog", "postgres", "scheduled-job"],
+  "timeout_s": 60,
+  "info": {
+    "failure": "The Catalog replica falls behind the primary database. Product pages can show old prices for about 10 minutes. Checkout uses the price from the primary database.",
+    "trigger": "The nightly `price_import` job starts at 00:30 UTC. It updates 48,210 rows in 10 batches. The replica falls behind as it applies the writes.",
+    "affected": [
+      { "name": "price_import", "kind": "job", "impact": "Writes supplier prices to the primary database in batches. The job completes at 00:35:48 UTC." },
+      { "name": "Catalog Postgres", "kind": "database", "impact": "The replica lags behind the primary. Query latency rises during the import." },
+      { "name": "catalog", "kind": "service", "impact": "Product pages read from the replica and can show old prices." }
+    ],
+    "signals": [
+      {
+        "source": "metric",
+        "where": "pg_replication_lag_s{db=catalog}",
+        "what": "Lag is 0.34 s at 00:30 UTC. It peaks at 44 s at 00:36 UTC and falls to 0.45 s at 00:44 UTC. Select **catalog** in the Postgres table.",
+        "when": "Nov 20, 00:30 to 00:44 UTC",
+        "dashboard": "#deps"
+      },
+      {
+        "source": "metric",
+        "where": "catalog_admin_changes_per_min",
+        "what": "Admin changes reach 9,800 per minute at 00:31 UTC. They return to zero at 00:36 UTC. Select **catalog** in the service list.",
+        "when": "Nov 20, 00:30 to 00:36 UTC",
+        "dashboard": "#services"
+      },
+      {
+        "source": "log",
+        "where": "job=price_import",
+        "what": "Search for `job=price_import`. The `cron` logs show the start and finish. The `catalog` logs show 10 batch commits.",
+        "when": "Nov 20, 00:30:00 to 00:35:48 UTC",
+        "dashboard": "#logs"
+      },
+      {
+        "source": "alert",
+        "where": "ReplicaLagHigh",
+        "what": "The serious alert fires at 00:39 UTC after lag stays above 30 s for 5 minutes. It clears at 00:41 UTC.",
+        "when": "Nov 20, 00:39 to 00:41 UTC",
+        "dashboard": "#changes"
+      },
+      {
+        "source": "event",
+        "where": "Changes",
+        "what": "The changes list has no deploy or configuration change during the import or lag. The last Catalog deploy is at 14:05 UTC on Nov 19.",
+        "when": "Nov 20, 00:30 to 00:44 UTC",
+        "dashboard": "#changes"
+      },
+      {
+        "source": "trace",
+        "where": "GET /products/:id",
+        "what": "The request returns HTTP 200. The `pg SELECT product (replica)` span shows that the product page reads from the replica.",
+        "when": "Nov 20, 00:34:51 UTC",
+        "dashboard": "#traces/86e6831030f577206de6c949b5ebab49"
+      },
+      {
+        "source": "order",
+        "where": "ord_CQV7SY",
+        "what": "This sample order reaches `PAID` about four seconds after checkout starts. The order timeline shows the payment during the lag.",
+        "when": "Nov 20, 00:38:04 to 00:38:08 UTC",
+        "dashboard": "#orders/ord_CQV7SY"
+      },
+      {
+        "source": "business",
+        "where": "Checkout and payment success rates",
+        "what": "Checkout and payment success rates stay between 93.75% and 100% during the lag. The count of orders stuck in `PENDING` for more than 15 minutes stays at zero.",
+        "when": "Nov 20, 00:31 to 00:44 UTC",
+        "dashboard": "#business"
+      }
+    ],
+    "expected": {
+      "root_cause": "The nightly supplier price import writes 10 batches to Catalog Postgres. The replica takes time to apply the writes. The alert clears at 00:41 UTC and lag is below 1 s by 00:44 UTC.",
+      "impact": "Product pages can show old prices for about 10 minutes. Checkout reads from the primary database, so customers pay the correct price.",
+      "next_steps": "No immediate action is needed. Review batch size or the alert rule if the nightly lag becomes a problem."
+    }
+  }
+}

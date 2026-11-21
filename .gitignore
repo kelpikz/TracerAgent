@@ -2,3 +2,6 @@
 data/
 __pycache__/
 *.pyc
+node_modules/
+evals/results/
+evals/ui/dist/
