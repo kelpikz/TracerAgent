@@ -3,9 +3,13 @@
 
 Scenario "baseline": all services are healthy. Use it as "normal".
 
-Run:   python seed/generate.py
-Out:   data/baseline/  metrics.json, logs.jsonl, traces.json, orders.json,
-                       events.json, alerts.json, topology.json, data.js
+Run:   python seed/generate.py                  baseline, and noise.js for the dashboard toggles
+       python seed/generate.py --noise all      also data/noisy/ with all noise items applied
+       python seed/generate.py --noise nightly_backup,price_scraper --name my_case
+Out:   data/<scenario>/  metrics.json, logs.jsonl, traces.json, orders.json,
+                         events.json, alerts.json, topology.json, data.js
+       data/baseline/noise.js     noise overlays (see seed/noise.py)
+       data/<noisy>/labels.json   the truth for each noise item. For grading. Do not give it to the agent.
 
 Same seed = same data, every time. Standard library only.
 """
@@ -13,6 +17,7 @@ import json
 import math
 import os
 import random
+import sys
 from datetime import datetime, timedelta, timezone
 
 SEED = 42
@@ -488,11 +493,11 @@ def carrier_update(t0, oid, ship_id, status, template, tl):
     TRACES.append(spans)
 
 
-def checkout(t0):
+def checkout(t0, decline=None):
     tid, spans, tl = hexid(32), [], []
     oid, uid = order_id(), user_id()
     amount, items = round(R.uniform(12, 240), 2), R.randint(1, 4)
-    declined = R.random() < 0.026
+    declined = R.random() < 0.026 if decline is None else decline
     status = 402 if declined else 201
     pay_id = "pay_" + hexid(10)
 
@@ -775,6 +780,7 @@ def main():
 
     alerts = {
         "firing": [],
+        "history": [],
         "rules": [
             {"name": "CheckoutSuccessLow", "rule": "checkout_success_rate < 90% for 10m", "severity": "critical"},
             {"name": "OrdersStuckPending", "rule": "orders_stuck_pending_15m > 5", "severity": "critical"},
@@ -814,31 +820,58 @@ def main():
     logs = [clean(e) for e in LOGS]
     orders = [clean(o) for o in ORDERS]
 
-    os.makedirs(OUT, exist_ok=True)
+    bundle = {"meta": meta, "metrics": metrics, "logs": logs, "traces": traces, "orders": orders,
+              "events": events, "alerts": alerts, "topology": TOPOLOGY}
+    write(OUT, bundle)
+    print(f"scenario={SCENARIO} series={len(SERIES)} logs={len(logs)} traces={len(traces)} orders={len(orders)}")
+
+    import noise  # after the baseline: noise uses R, so the baseline stays the same
+    items = noise.build(sys.modules[__name__], by_key)
+    with open(os.path.join(OUT, "noise.js"), "w", encoding="utf-8") as f:
+        f.write("window.TRACER_NOISE=")
+        json.dump(items, f, separators=(",", ":"))
+        f.write(";\n")
+    print(f"noise items={len(items)}, written to {os.path.join(OUT, 'noise.js')}")
+
+    args = sys.argv[1:]
+    if "--noise" in args:
+        want = args[args.index("--noise") + 1]
+        name = args[args.index("--name") + 1] if "--name" in args else "noisy"
+        ids = [n["id"] for n in items] if want == "all" else want.split(",")
+        unknown = set(ids) - {n["id"] for n in items}
+        if unknown:
+            sys.exit(f"Unknown noise id: {', '.join(sorted(unknown))}. Known: {', '.join(n['id'] for n in items)}")
+        out = os.path.join(ROOT, "data", name)
+        chosen = [n for n in items if n["id"] in ids]
+        write(out, noise.apply(bundle, chosen, name))
+        labels = [{k: v for k, v in n.items() if k not in noise.DATA_KEYS} for n in chosen]
+        with open(os.path.join(out, "labels.json"), "w", encoding="utf-8") as f:
+            json.dump(labels, f, indent=1)
+        print(f"scenario={name} noise={','.join(ids)}, written to {out}")
+
+
+def write(out, bundle):
+    os.makedirs(out, exist_ok=True)
 
     def dump(name, obj):
-        with open(os.path.join(OUT, name), "w", encoding="utf-8") as f:
+        with open(os.path.join(out, name), "w", encoding="utf-8") as f:
             json.dump(obj, f, separators=(",", ":"))
 
+    metrics, logs, traces = bundle["metrics"], bundle["logs"], bundle["traces"]
+    orders, events, alerts = bundle["orders"], bundle["events"], bundle["alerts"]
     dump("metrics.json", metrics)
     dump("traces.json", traces)
     dump("orders.json", orders)
     dump("events.json", events)
     dump("alerts.json", alerts)
     dump("topology.json", TOPOLOGY)
-    with open(os.path.join(OUT, "logs.jsonl"), "w", encoding="utf-8") as f:
+    with open(os.path.join(out, "logs.jsonl"), "w", encoding="utf-8") as f:
         for e in logs:
             f.write(json.dumps(e, separators=(",", ":")) + "\n")
-
-    bundle = {"meta": meta, "metrics": metrics, "logs": logs, "traces": traces, "orders": orders,
-              "events": events, "alerts": alerts, "topology": TOPOLOGY}
-    with open(os.path.join(OUT, "data.js"), "w", encoding="utf-8") as f:
+    with open(os.path.join(out, "data.js"), "w", encoding="utf-8") as f:
         f.write("window.TRACER_DATA=")
         json.dump(bundle, f, separators=(",", ":"))
         f.write(";\n")
-
-    print(f"scenario={SCENARIO} series={len(SERIES)} logs={len(logs)} traces={len(traces)} orders={len(orders)}")
-    print(f"written to {OUT}")
 
 
 if __name__ == "__main__":

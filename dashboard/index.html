@@ -121,6 +121,45 @@ input[type=text]{min-width:200px}
 .lg span{display:inline-flex;align-items:center;gap:6px}
 ol.flow{margin:0;padding-left:20px}
 ol.flow li{margin:3px 0}
+.nhead{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.nhead p{margin:0;color:var(--ink2);font-size:13px;max-width:640px}
+.nhead .chips{margin:0}
+.nlist{display:grid;gap:10px}
+.nrow{display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.nrow.on{border-color:var(--s1);box-shadow:inset 3px 0 0 var(--s1)}
+.nbody{flex:1;min-width:0}
+.ntitle{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-bottom:4px}
+.ntitle .num{font-size:11px;font-weight:700;color:var(--muted);min-width:18px}
+.ntitle .when{font-size:12px;color:var(--muted)}
+.nline{font-size:13px;color:var(--ink2);margin-top:3px;display:flex;gap:10px}
+.nline .k,.truth .k{flex:none;width:78px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding-top:2px}
+.truth{display:flex;gap:10px;font-size:13px;color:var(--ink);background:var(--sel);border-radius:8px;padding:8px 10px;margin-top:8px}
+.truth[hidden]{display:none}
+.ibtn{width:20px;height:20px;border-radius:50%;border:1px solid var(--axis);background:var(--surface);color:var(--ink2);
+  font:italic 700 12px Georgia,serif;cursor:pointer;display:inline-grid;place-items:center;padding:0}
+.ibtn:hover,.ibtn[aria-expanded="true"]{background:var(--s1);border-color:var(--s1);color:#fff}
+.sw{position:relative;flex:none;width:38px;height:22px;margin-top:1px;cursor:pointer}
+.sw input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.sw .trk{position:absolute;inset:0;border-radius:11px;background:var(--axis);transition:background .15s}
+.sw .trk::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s}
+.sw input:checked + .trk{background:var(--s1)}
+.sw input:checked + .trk::after{transform:translateX(16px)}
+.sw input:focus-visible + .trk{outline:2px solid var(--s1);outline-offset:2px}
+@media (max-width:600px){.nline,.truth{flex-direction:column;gap:0}}
+.nbtn{font:inherit;font-size:13px;border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:8px;padding:5px 10px;cursor:pointer}
+.nbtn[aria-expanded="true"]{background:var(--sel);border-color:var(--s1)}
+.nbtn .nct{color:var(--muted);margin-left:4px}
+#side{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:100%;z-index:10;background:var(--page);
+  border-left:1px solid var(--border);display:flex;flex-direction:column;box-shadow:-6px 0 18px rgba(0,0,0,.12)}
+#side[hidden]{display:none}
+#side .shead{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:12px 14px;border-bottom:1px solid var(--border)}
+#side .shead .chips{margin:0}
+#side .sbody{flex:1;overflow-y:auto;padding:0 12px 24px}
+#side .nrow{gap:10px;padding:10px 12px}
+#side .nline,#side .truth{flex-direction:column;gap:0}
+.sclose{border:0;background:none;color:var(--ink2);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:6px}
+.sclose:hover{background:var(--hover)}
+@media (min-width:1000px){body.side-open{padding-right:400px}}
 .err-box{max-width:640px;margin:60px auto;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
 </style>
 </head>
@@ -131,6 +170,7 @@ ol.flow li{margin:3px 0}
     <span class="sub" id="scn"></span>
     <span class="spacer"></span>
     <span id="alertBadge"></span>
+    <button id="noiseBtn" class="nbtn" data-side-toggle aria-controls="side" hidden></button>
     <div class="seg" id="range" role="group" aria-label="Time range">
       <button data-r="1440">24h</button><button data-r="360">6h</button><button data-r="60">1h</button>
     </div>
@@ -138,13 +178,19 @@ ol.flow li{margin:3px 0}
   <nav id="tabs" role="tablist"></nav>
 </header>
 <main id="main"></main>
+<aside id="side" aria-label="Noise toggles" hidden></aside>
 
 <script>
 (function load(){
   const scenario = new URLSearchParams(location.search).get('scenario') || 'baseline';
   const s = document.createElement('script');
   s.src = '../data/' + encodeURIComponent(scenario) + '/data.js';
-  s.onload = () => start();
+  s.onload = () => { // noise overlays are optional
+    const n = document.createElement('script');
+    n.src = '../data/' + encodeURIComponent(scenario) + '/noise.js';
+    n.onload = n.onerror = () => start();
+    document.head.appendChild(n);
+  };
   s.onerror = () => {
     document.getElementById('main').innerHTML =
       '<div class="err-box"><b>No data for scenario "' + scenario + '".</b><p>Run <code>python seed/generate.py</code> first. ' +
@@ -154,17 +200,52 @@ ol.flow li{margin:3px 0}
 })();
 
 function start(){
-const D = window.TRACER_DATA;
+const BASE = window.TRACER_DATA, NOISE = window.TRACER_NOISE || null;
+let D = BASE;
 const STEP = D.metrics.step_s * 1000, N = D.metrics.points, T0 = Date.parse(D.metrics.start), TEND = T0 + N * STEP;
 const SERVICES = ['auth','catalog','cart','order','payment','delivery','notification'];
+const NOISE_IDS = new Set(NOISE ? NOISE.map(n => n.id) : []);
 const state = {tab:'overview', range:1440, service:'order', db:'orders', trace:null, order:null,
-  logs:{service:'',level:'',text:'',trace:''}, traces:{service:'',status:'',text:''}, orders:{status:''}};
+  logs:{service:'',level:'',text:'',trace:''}, traces:{service:'',status:'',text:''}, orders:{status:''},
+  noise: new Set((new URLSearchParams(location.search).get('noise') || '').split(',').filter(x => NOISE_IDS.has(x))),
+  info: new Set(), side: false};
+try { state.side = localStorage.getItem('noiseSide') === '1'; } catch (e) {}
 
 /* ---------- helpers ---------- */
 const $ = (sel, el=document) => el.querySelector(sel);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const key = (name, labels={}) => name + '{' + Object.keys(labels).sort().map(k => k + '=' + labels[k]).join(',') + '}';
-const IDX = new Map(D.metrics.series.map(s => [key(s.name, s.labels), s]));
+let IDX = new Map(D.metrics.series.map(s => [key(s.name, s.labels), s]));
+const byTs = f => (a, b) => a[f] < b[f] ? -1 : a[f] > b[f] ? 1 : 0;
+
+/* ---------- noise: baseline + chosen overlays (same logic as noise.apply in seed/noise.py) ---------- */
+function applyNoise(){
+  const on = NOISE ? NOISE.filter(n => state.noise.has(n.id)) : [];
+  const series = BASE.metrics.series.slice(), pos = new Map(series.map((s, i) => [key(s.name, s.labels), i])), copied = new Set();
+  for (const n of on) for (const p of n.metrics){
+    const j = pos.get(key(p.name, p.labels)); if (j == null) continue;
+    if (!copied.has(j)){ series[j] = {...series[j], values: series[j].values.slice()}; copied.add(j); }
+    const v = series[j].values; p.delta.forEach((d, k) => { v[p.i + k] = Math.round((v[p.i + k] + d) * 1000) / 1000; });
+  }
+  let logs = BASE.logs;
+  for (const n of on) for (const r of n.drop_logs)
+    logs = logs.filter(e => !(e.service === r.service && e.msg === r.msg && e.ts >= r.from && e.ts < r.to));
+  const history = (BASE.alerts.history || []).concat(...on.map(n => n.alerts.map(a => ({...a, noise: n})))).sort(byTs('fired_at'));
+  const firing = history.filter(a => !a.resolved_at);
+  D = {...BASE,
+    metrics: {...BASE.metrics, series},
+    logs: on.length ? logs.concat(...on.map(n => n.logs)).sort(byTs('ts')) : BASE.logs,
+    traces: on.length ? BASE.traces.concat(...on.map(n => n.traces)).sort(byTs('start')) : BASE.traces,
+    orders: on.length ? BASE.orders.concat(...on.map(n => n.orders)).sort(byTs('created_at')) : BASE.orders,
+    alerts: {rules: BASE.alerts.rules.map(r => ({...r, state: firing.some(a => a.name === r.name) ? 'firing' : 'ok'})), firing, history}};
+  IDX = new Map(D.metrics.series.map(s => [key(s.name, s.labels), s]));
+}
+function syncNoiseUrl(){
+  const p = new URLSearchParams(location.search);
+  if (state.noise.size) p.set('noise', NOISE.filter(n => state.noise.has(n.id)).map(n => n.id).join(',')); else p.delete('noise');
+  const q = p.toString().replace(/%2C/g, ',');
+  history.replaceState(null, '', (q ? '?' + q : location.pathname) + location.hash);
+}
 const S = (name, labels) => IDX.get(key(name, labels));
 const hhmm = t => new Date(t).toISOString().slice(11,16);
 const dayTime = t => { const d = new Date(t).toISOString(); return d.slice(5,10) + ' ' + d.slice(11,16); };
@@ -294,7 +375,7 @@ function serviceHealth(svc){
 
 /* ---------- tabs ---------- */
 const TABS = [['overview','Overview'],['map','System map'],['services','Services'],['deps','Dependencies'],['business','Business'],
-  ['logs','Logs'],['traces','Traces'],['orders','Orders'],['changes','Changes and alerts']];
+  ['logs','Logs'],['traces','Traces'],['orders','Orders'],['changes','Changes and alerts']].concat(NOISE ? [['noise','Noise']] : []);
 
 const VIEWS = {
 map(){
@@ -547,7 +628,7 @@ logs(){
   const f = state.logs;
   const opt = (v, cur, label) => `<option value="${v}"${v === cur ? ' selected' : ''}>${label}</option>`;
   let h = `<div class="filters">
-    <select data-lf="service" aria-label="Service">${opt('', f.service, 'All services')}${['gateway', ...SERVICES].map(s => opt(s, f.service, s)).join('')}</select>
+    <select data-lf="service" aria-label="Service">${opt('', f.service, 'All services')}${['gateway', ...SERVICES, 'cron'].map(s => opt(s, f.service, s)).join('')}</select>
     <select data-lf="level" aria-label="Level">${opt('', f.level, 'All levels')}${['info','warn','error'].map(s => opt(s, f.level, s)).join('')}</select>
     <input type="text" data-lf="text" placeholder="Search message or fields" value="${esc(f.text)}">
     <input type="text" data-lf="trace" placeholder="trace_id" value="${esc(f.trace)}">
@@ -580,9 +661,67 @@ changes(){
   h += `<h2>Alert rules · ${D.alerts.firing.length} firing</h2><div class="tw"><table><thead><tr><th>Name</th><th>Rule</th><th>Severity</th><th>State</th></tr></thead><tbody>` +
     D.alerts.rules.map(r => `<tr><td><b>${esc(r.name)}</b></td><td class="mono">${esc(r.rule)}</td><td>${esc(r.severity)}</td>
       <td>${r.state === 'ok' ? pill('good','OK') : pill(r.severity, 'Firing')}</td></tr>`).join('') + '</tbody></table></div>';
+  const hist = D.alerts.history || [];
+  h += `<h2>Alert history · ${hist.length} alerts in 24 h</h2><div class="tw">` + (hist.length ?
+    '<table><thead><tr><th>Fired (UTC)</th><th>Resolved (UTC)</th><th>Name</th><th>Severity</th><th>Details</th><th>Source</th></tr></thead><tbody>' +
+    hist.slice().reverse().map(a => `<tr><td class="nw mono">${fullTime(a.fired_at).slice(0,11)}</td>
+      <td class="nw">${a.resolved_at ? '<span class="mono">' + fullTime(a.resolved_at).slice(0,11) + '</span>' : pill(a.severity, 'Firing')}</td>
+      <td><b>${esc(a.name)}</b></td><td>${esc(a.severity)}</td><td class="mono">${esc(a.summary)}</td>
+      <td>${a.noise ? `<a class="lnk" data-tab="noise">Noise ${a.noise.n}</a>` : '—'}</td></tr>`).join('') + '</tbody></table>'
+    : '<div class="empty">No alerts fired in the last 24 h.</div>') + '</div>';
   return h;
 },
+
+noise(){
+  return `<div class="nhead"><p>Each toggle adds one noise item to the baseline data. All tabs show the result.
+    The <b>i</b> button shows the truth: what really causes it. The <b>Noise</b> button at the top opens the same toggles in a sidebar.</p>
+    <span class="spacer"></span><span class="count">${state.noise.size} of ${NOISE.length} on</span>
+    <div class="chips"><button data-noise-all="1">All on</button><button data-noise-all="0">All off</button></div></div>` + noiseList();
+},
 };
+
+/* ---------- noise toggles: used by the Noise tab and the sidebar ---------- */
+function noiseList(){
+  const GROUPS = [['alerts', 'Alerts that fire, but are noise'], ['spikes', 'Spikes from scheduled jobs and legacy code']];
+  let h = '';
+  for (const [g, title] of GROUPS){
+    h += `<h2>${title}</h2><div class="nlist">`;
+    for (const n of NOISE.filter(x => x.group === g)){
+      const on = state.noise.has(n.id), open = state.info.has(n.id);
+      const al = {}; n.alerts.forEach(a => { al[a.name] = (al[a.name] || 0) + 1; });
+      const alerts = Object.keys(al).length ? Object.entries(al).map(([k, v]) => `<b>${esc(k)}</b>${v > 1 ? ' × ' + v : ''}`).join(', ') : 'none';
+      h += `<div class="nrow${on ? ' on' : ''}">
+        <label class="sw"><input type="checkbox" role="switch" data-noise="${n.id}"${on ? ' checked' : ''} aria-label="${esc(n.title)}"><span class="trk"></span></label>
+        <div class="nbody">
+          <div class="ntitle"><span class="num">${n.n}</span><b>${esc(n.title)}</b><span class="when">${esc(n.when)}</span>
+            <button class="ibtn" data-info="${n.id}" aria-expanded="${open}" aria-label="Truth for: ${esc(n.title)}" title="Show the truth">i</button></div>
+          <div class="nline"><span class="k">Turns on</span><span>${esc(n.example)}</span></div>
+          <div class="nline"><span class="k">Alerts</span><span>${alerts}</span></div>
+          <div class="nline"><span class="k">Looks like</span><span>${esc(n.looks_like)}</span></div>
+          <div class="truth"${open ? '' : ' hidden'}><span class="k">Truth</span><span>${esc(n.truth)}</span></div>
+        </div></div>`;
+    }
+    h += '</div>';
+  }
+  return h;
+}
+
+function renderSide(){
+  const btn = $('#noiseBtn'), side = $('#side');
+  if (!NOISE){ btn.hidden = true; return; }
+  btn.hidden = false;
+  btn.setAttribute('aria-expanded', String(state.side));
+  btn.innerHTML = `Noise <span class="nct">${state.noise.size} of ${NOISE.length} on</span>`;
+  document.body.classList.toggle('side-open', state.side);
+  side.hidden = !state.side;
+  if (!state.side) return;
+  const body = $('#side .sbody'), top = body ? body.scrollTop : 0;
+  side.innerHTML = `<div class="shead"><b>Noise</b><span class="count">${state.noise.size} of ${NOISE.length} on</span><span class="spacer"></span>
+    <div class="chips"><button data-noise-all="1">All on</button><button data-noise-all="0">All off</button></div>
+    <button class="sclose" data-side-close aria-label="Close the noise sidebar">✕</button></div>
+    <div class="sbody">${noiseList()}</div>`;
+  $('#side .sbody').scrollTop = top;
+}
 
 /* ---------- dynamic parts ---------- */
 const LEVEL = {info:['info','info'], warn:['warning','warn'], error:['critical','error']};
@@ -668,6 +807,10 @@ function render(){
   if (location.hash !== h) history.replaceState(null, '', h);
   $('#tabs').innerHTML = TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${k === state.tab}">${l}</button>`).join('');
   document.querySelectorAll('#range button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.r === state.range)));
+  $('#scn').textContent = `Scenario: ${D.meta.scenario}${state.noise.size ? ' + ' + state.noise.size + ' noise' : ''} · ${dayTime(T0)} → ${dayTime(TEND)} UTC · seed ${D.meta.seed}`;
+  const nf = D.alerts.firing.length, worst = ['critical','serious','warning'].find(l => D.alerts.firing.some(a => a.severity === l));
+  $('#alertBadge').innerHTML = nf ? pill(worst || 'critical', nf + (nf === 1 ? ' alert firing' : ' alerts firing')) : pill('good', 'No alerts firing');
+  renderSide();
   $('#main').innerHTML = VIEWS[state.tab]();
   drawCharts();
   if (state.tab === 'logs') renderLogs();
@@ -679,10 +822,27 @@ function render(){
   if (VIEWS[tab]) state.tab = tab;
   if (tab === 'traces' && id) state.trace = id;
   if (tab === 'orders' && id) state.order = id; }
-$('#scn').textContent = `Scenario: ${D.meta.scenario} · ${dayTime(T0)} → ${dayTime(TEND)} UTC · seed ${D.meta.seed}`;
-$('#alertBadge').innerHTML = D.alerts.firing.length ? pill('critical', D.alerts.firing.length + ' alerts firing') : pill('good', 'No alerts firing');
 
 document.addEventListener('click', ev => {
+  const nb = ev.target.closest('[data-info],[data-noise-all],[data-side-toggle],[data-side-close]');
+  if (nb){
+    if (nb.dataset.info){ // the same item can be in the tab and in the sidebar
+      const id = nb.dataset.info, open = !state.info.has(id);
+      open ? state.info.add(id) : state.info.delete(id);
+      document.querySelectorAll(`[data-info="${id}"]`).forEach(b => {
+        b.setAttribute('aria-expanded', String(open));
+        b.closest('.nbody').querySelector('.truth').hidden = !open;
+      });
+      return;
+    }
+    if (nb.dataset.sideToggle !== undefined || nb.dataset.sideClose !== undefined){
+      state.side = nb.dataset.sideClose !== undefined ? false : !state.side;
+      try { localStorage.setItem('noiseSide', state.side ? '1' : '0'); } catch (e) {}
+      renderSide(); drawCharts(); return;
+    }
+    state.noise = new Set(nb.dataset.noiseAll === '1' ? NOISE_IDS : []);
+    applyNoise(); syncNoiseUrl(); render(); return;
+  }
   const t = ev.target.closest('[data-tab],[data-r],[data-service],[data-go-service],[data-db],[data-trace],[data-order],[data-ostatus]');
   if (!t) return;
   const d = t.dataset;
@@ -703,7 +863,13 @@ document.addEventListener('input', ev => {
   if (t.dataset.lf){ state.logs[t.dataset.lf] = t.value; renderLogs(); }
   if (t.dataset.tf){ state.traces[t.dataset.tf] = t.value; renderTraces(); }
 });
+document.addEventListener('change', ev => {
+  const id = ev.target.dataset.noise; if (!id) return;
+  ev.target.checked ? state.noise.add(id) : state.noise.delete(id);
+  applyNoise(); syncNoiseUrl(); render();
+});
 let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(drawCharts, 150); });
+applyNoise();
 render();
 }
 </script>

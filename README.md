@@ -19,6 +19,34 @@ Then open `dashboard/index.html` in a browser. A server is not necessary.
 To open a different scenario: `dashboard/index.html?scenario=<name>`.
 Deep links: `#traces/<trace_id>`, `#orders/<order_id>`.
 
+## Noise
+
+Noise looks like a problem, but it is not. Use it to test if the agent can tell noise from a real incident.
+There are 12 noise items in `seed/noise.py`. Each item is an overlay on the baseline.
+
+- **Dashboard:** open the **Noise** tab. Each toggle turns on one item. All tabs show the result.
+  The **i** button shows the truth. The URL keeps your choice: `?noise=nightly_backup,price_scraper`.
+- **Files for the agent:** `python seed/generate.py --noise all` writes `data/noisy/`.
+  Use `--noise <id>,<id>` for some items and `--name <scenario>` for a different folder.
+  `labels.json` has the truth for each item. Use it to grade the agent. Do not give it to the agent.
+
+| # | id | When (UTC) | Alerts |
+|---|---|---|---|
+| 1 | `night_declines` | 03:00–05:00 | PaymentSuccessLow, CheckoutSuccessLow |
+| 3 | `dlq_deleted_users` | 5 times a day | DlqGrowing (the last one is still firing) |
+| 6 | `stuck_3ds` | from 11:26 | none |
+| 7 | `nightly_backup` | 02:00–02:45 | none |
+| 8 | `price_import` | 00:30–00:42 | ReplicaLagHigh |
+| 9 | `redis_keys_scan` | 00:00–00:02 | none |
+| 10 | `notification_oom` | about every 6 h | none |
+| 11 | `catalog_gc` | every 40 min | none |
+| 12 | `node3_report` | 06:00–06:12 | none |
+| 13 | `carrier_maintenance` | 01:00–01:15 | ThirdPartyErrors |
+| 14 | `newsletter_spike` | 10:00–10:30 | none |
+| 15 | `price_scraper` | every hour at :07 | none |
+
+Logs from scheduled jobs use the service name `cron`.
+
 ## Output: `data/<scenario>/`
 
 | File | Contents |
@@ -28,7 +56,7 @@ Deep links: `#traces/<trace_id>`, `#orders/<order_id>`.
 | `traces.json` | Sampled traces. Each span has `offset_ms` from the trace start. |
 | `orders.json` | Each sampled checkout, with its full timeline and trace IDs. |
 | `events.json` | Deploys and config changes. |
-| `alerts.json` | Alert rules and the alerts that fire now. |
+| `alerts.json` | Alert rules, the alerts that fire now, and the alert history. |
 | `topology.json` | Services, calls, Kafka topics and consumer groups, endpoints. |
 | `data.js` | All of the above in one file, for the dashboard. |
 
