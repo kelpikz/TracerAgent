@@ -6,19 +6,22 @@ Each case has a folder at `evals/cases/<case-id>/`.
 
 | File | Contents |
 | --- | --- |
-| `case.json` | The case ID, title, description, scenario, noise IDs, input, tags, and agent time limit in seconds. It can also include `info` for the case page. |
+| `case.json` | The case ID, title, description, scenario, incident IDs, noise IDs, input, tags, and agent time limit in seconds. It can also include `info` for the case page. |
 | `trajectory/tests.js` | JavaScript checks for the investigation. |
 | `trajectory/prompt.md` | The LLM rubric for the investigation. |
 | `outcome/tests.js` | JavaScript checks for the final answer. |
 | `outcome/prompt.md` | The LLM rubric for the final answer. |
-| `sample_transcript.json` | An optional transcript for the replay agent. |
+| `fixtures/good_transcript.json` | A good transcript with real tool results. `check-case.js` uses it to test the graders. |
+| `fixtures/bad_transcript.json` | A weak transcript. It must lose points. |
 
-The `id` in `case.json` matches the folder name. The `scenario` names a folder in `data/`.
+The `id` in `case.json` matches the folder name. The `scenario` names a folder in `data/`. Use the case ID.
+`npm run eval -- data <case-id>` makes the folder from `incidents` (from `seed/incidents.py`) and `noise`
+(from `seed/noise.py`). The runner makes it when it is missing.
 IDs and scenario names use lowercase ASCII letters, digits, hyphens, and underscores. They start with a letter or digit.
-`noise` and `tags` are arrays. `input` is the text that the agent receives. `timeout_s` is a positive number.
+`noise` and `tags` are arrays. `incidents` is an optional array. `input` is the text that the agent receives. `timeout_s` is a positive number.
 Each grader file is optional. The run shows its status as `missing` if the file is absent.
 
-`info` contains `failure`, `trigger`, `affected`, `signals`, and `expected`. The case detail API returns `info` when present and returns matching noise labels in `labels`. If the case has no matching labels, `labels` is `[]`. See the [case info reference](../../.claude/skills/create-eval-case/references/scenario-data.md#case-info) for the field rules.
+`info` contains `failure`, `trigger`, `affected`, `signals`, and `expected`. The case detail API returns `info` when present. Otherwise it returns the `info` of the first incident that has one. It returns the matching incident and noise labels in `labels`. If the case has no matching labels, `labels` is `[]`. See the [case info reference](../../.claude/skills/create-eval-case/references/scenario-data.md#case-info) for the field rules.
 
 ## Agent input
 
@@ -29,19 +32,23 @@ The agent receives one JSON object on standard input. The runner closes standard
 {
   "case_id": "noise-price-import-replica-lag",
   "input": "Find the cause of ReplicaLagHigh.",
-  "scenario": "noisy",
+  "scenario": "noise-price-import-replica-lag",
   "noise": ["price_import"],
-  "data_dir": "E:/TracerAgnet/data/noisy",
+  "incidents": [],
+  "now": "2026-11-20T12:00:00.000Z",
+  "data_dir": "E:/TracerAgnet/data/noise-price-import-replica-lag",
   "model": "openai-codex/gpt-6.2-sol",
   "effort": "high"
 }
 ```
 
 `data_dir` is an absolute path to the scenario data. The case page and graders use `labels.json`.
+The data covers a fixed window. `now` is the window end. The agent must use it as the current time,
+for example to resolve "the last hour".
 
 `model` is the agent model in `provider/model` format. `effort` is one of
 `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`.
-The replay agent ignores both fields.
+The runner does not use the fixtures. It needs an agent command.
 
 | Environment variable | Default | Use |
 | --- | --- | --- |

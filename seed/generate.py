@@ -6,10 +6,15 @@ Scenario "baseline": all services are healthy. Use it as "normal".
 Run:   python seed/generate.py                  baseline, and noise.js for the dashboard toggles
        python seed/generate.py --noise all      also data/noisy/ with all noise items applied
        python seed/generate.py --noise nightly_backup,price_scraper --name my_case
+       python seed/generate.py --incidents stripe_webhook_secret --noise price_scraper --name my_case
 Out:   data/<scenario>/  metrics.json, logs.jsonl, traces.json, orders.json,
-                         events.json, alerts.json, topology.json, data.js
+                         events.json, alerts.json, topology.json, meta.json, data.js
        data/baseline/noise.js     noise overlays (see seed/noise.py)
-       data/<noisy>/labels.json   the truth for each noise item. For grading. Do not give it to the agent.
+       data/<name>/labels.json    the truth for each noise item and incident. For grading.
+                                  Do not give it to the agent.
+
+--name without --noise or --incidents writes a copy of the baseline to data/<name>/.
+Real faults for eval cases are in seed/incidents.py.
 
 Same seed = same data, every time. Standard library only.
 """
@@ -807,7 +812,7 @@ def main():
     meta = {
         "scenario": SCENARIO,
         "description": "All services healthy. Normal daily traffic. 3 deploys and 1 config change, no impact.",
-        "seed": SEED, "start": iso(START), "end": iso(END), "step_s": 60, "points": MINUTES,
+        "seed": SEED, "start": iso(START), "end": iso(END), "now": iso(END), "step_s": 60, "points": MINUTES,
         "notes": [
             "Metrics: one point per minute (the real scraper uses 15s).",
             "Traces and logs are a sample of real traffic, not every request.",
@@ -834,20 +839,30 @@ def main():
     print(f"noise items={len(items)}, written to {os.path.join(OUT, 'noise.js')}")
 
     args = sys.argv[1:]
-    if "--noise" in args:
-        want = args[args.index("--noise") + 1]
-        name = args[args.index("--name") + 1] if "--name" in args else "noisy"
-        ids = [n["id"] for n in items] if want == "all" else want.split(",")
-        unknown = set(ids) - {n["id"] for n in items}
+
+    def arg(flag, default=None):
+        return args[args.index(flag) + 1] if flag in args and args.index(flag) + 1 < len(args) else default
+
+    def pick(flag, catalog, kind):
+        want = arg(flag, "")
+        ids = [n["id"] for n in catalog] if want == "all" else [x for x in want.split(",") if x.strip()]
+        unknown = set(ids) - {n["id"] for n in catalog}
         if unknown:
-            sys.exit(f"Unknown noise id: {', '.join(sorted(unknown))}. Known: {', '.join(n['id'] for n in items)}")
+            sys.exit(f"Unknown {kind} id: {', '.join(sorted(unknown))}. Known: {', '.join(n['id'] for n in catalog)}")
+        return [n for n in catalog if n["id"] in ids]
+
+    if {"--noise", "--incidents", "--name"} & set(args):
+        import incidents
+        name = arg("--name", "noisy")
+        chosen = pick("--noise", items, "noise")
+        if "--incidents" in args:
+            chosen += pick("--incidents", incidents.build(sys.modules[__name__], by_key), "incident")
         out = os.path.join(ROOT, "data", name)
-        chosen = [n for n in items if n["id"] in ids]
         write(out, noise.apply(bundle, chosen, name))
         labels = [{k: v for k, v in n.items() if k not in noise.DATA_KEYS} for n in chosen]
         with open(os.path.join(out, "labels.json"), "w", encoding="utf-8") as f:
             json.dump(labels, f, indent=1)
-        print(f"scenario={name} noise={','.join(ids)}, written to {out}")
+        print(f"scenario={name} items={','.join(n['id'] for n in chosen) or 'none'}, written to {out}")
 
 
 def write(out, bundle):
@@ -865,6 +880,7 @@ def write(out, bundle):
     dump("events.json", events)
     dump("alerts.json", alerts)
     dump("topology.json", TOPOLOGY)
+    dump("meta.json", bundle["meta"])
     with open(os.path.join(out, "logs.jsonl"), "w", encoding="utf-8") as f:
         for e in logs:
             f.write(json.dumps(e, separators=(",", ":")) + "\n")

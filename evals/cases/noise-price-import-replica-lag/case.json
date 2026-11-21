@@ -2,7 +2,7 @@
   "id": "noise-price-import-replica-lag",
   "title": "Replica lag during the price import",
   "description": "Find the cause of the Catalog replica lag. Check if the lag cleared and if checkout was affected.",
-  "scenario": "noisy",
+  "scenario": "noise-price-import-replica-lag",
   "noise": ["price_import"],
   "input": "ReplicaLagHigh [serious] at 2026-11-20 00:39 UTC\npg_replication_lag_s{db=catalog} 36s > 30s for 5m\n\nFind the cause, check customer impact, and tell me if we need to act.",
   "tags": ["catalog", "postgres", "scheduled-job"],

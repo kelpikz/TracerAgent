@@ -222,13 +222,18 @@ async function caseDetail(testCase) {
       ]);
       return [kind, { tests, prompt }];
     })),
-    testCase.noise.length ? readJson(join(dataDir, testCase.scenario, 'labels.json')) : null,
+    readJson(join(dataDir, testCase.scenario, 'labels.json')).catch(() => null),
   ]);
+  const ids = [...(testCase.incidents ?? []), ...testCase.noise];
+  const matching = (Array.isArray(labels) ? labels : []).filter(label => ids.includes(label?.id));
+  // A case without its own info shows the info that the incident generator made.
+  const incidentInfo = matching.find(label => testCase.incidents?.includes(label.id) && label.info)?.info;
   return {
     ...testCase,
+    ...(testCase.info || !incidentInfo ? {} : { info: incidentInfo }),
     graders: Object.fromEntries(graders),
     runs,
-    labels: (labels ?? []).filter(label => testCase.noise.includes(label.id)),
+    labels: matching.map(({ info: _info, ...label }) => label),
   };
 }
 

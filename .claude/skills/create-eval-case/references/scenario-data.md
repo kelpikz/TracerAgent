@@ -1,8 +1,9 @@
 # Scenario data
 
-A scenario is a folder in `data/`. The agent command receives the path to this folder as `data_dir`.
-The command also receives the case's `noise` array. The runner passes this array as data.
-Check how the agent command uses it before you rely on it to change the data.
+A scenario is a folder in `data/`. Each case has its own scenario, `data/<case-id>/`.
+`npm run eval -- data <case-id>` makes it from the case's `incidents` and `noise` arrays.
+The runner makes it when it is missing. The agent command receives the path to this folder as `data_dir`,
+and the window end as `now`.
 
 ## Data files
 
@@ -15,34 +16,35 @@ Check how the agent command uses it before you rely on it to change the data.
 | `events.json` | Changes such as deployments and configuration changes. |
 | `alerts.json` | Alert rules, firing alerts, and alert history. |
 | `topology.json` | Service names and their connections. |
+| `meta.json` | The scenario name, seed, window `start` and `end`, and `now` (the window end). |
 | `data.js` | The data bundle that the dashboard loads. |
 | `noise.js` | The noise items that the dashboard can apply to this bundle, if the file exists. The baseline has this file. |
-| `labels.json` | Noise metadata and expected facts, if the file exists. Use the `truth` field to find the expected cause and effect. |
+| `labels.json` | Metadata and expected facts for each selected noise item and incident. Use the `truth` field to find the expected cause and effect. An incident label also has `info`. |
 
 The baseline has one point per minute. Logs and traces show a sample of requests.
 Use a metric or an order record to check a claim about impact when a log sample is too small.
 Read `seed/generate.py` for baseline traffic, metric definitions, and the data that the generator writes.
 Read `seed/noise.py` for the changes that a noise item makes to that baseline.
 
-## Data with selected noise
+## Data for a case
 
-`data/noisy/` has all noise items already applied. A case can use one of those items as its subject.
-The `noise` field describes the items the case is about. It does not remove other items from `data/noisy/`.
-Check that other items do not affect the evidence in the case's time window.
-
-To make a scenario with selected items, use `--noise` with a comma-separated list of IDs.
-Set `--name` to a new scenario ID. The generator also rewrites the baseline files.
+The data of a case has only the items that the case selects. Run:
 
 ```sh
-python seed/generate.py --noise nightly_backup,price_scraper --name backup-and-scraper
+npm run eval -- data <case-id>
+npm run eval -- data --all
 ```
 
-Use the generated folder name in `scenario`. Use the selected IDs in `noise`.
-Use a name that follows the case ID rules. The generator uses a fixed seed for its data.
+The command runs the generator with the case recipe, for example
+`python seed/generate.py --name <case-id> --incidents stripe_webhook_secret --noise price_scraper`.
+The generator also rewrites the baseline files. Set `EVAL_PYTHON` to use a different Python command.
+
+The generator uses a fixed seed, and each noise item and incident has its own random generator.
+A new item does not change the data of the other items. `data/noisy/` (`--noise all`) is only for the dashboard.
 
 ## Example evidence for `price_import`
 
-- The label in `data/noisy/labels.json` describes the nightly supplier price import.
+- The label in `data/noise-price-import-replica-lag/labels.json` describes the nightly supplier price import.
 - `alerts.json` gives the firing and resolution times of `ReplicaLagHigh`.
 - `metrics.json` shows `pg_replication_lag_s` for `db: catalog`. It peaks at 44 seconds.
 - `logs.jsonl` has `cron` records for the job and `catalog` records for the batch writes.
@@ -54,7 +56,9 @@ The grader receives `labels.json` as `labels`. It receives `null` when the file 
 
 ## Case info
 
-The optional `info` object in `case.json` supplies the text for the Info tab. The case detail API also supplies the labels that match the case's `noise` IDs.
+The Info tab shows the `info` object from `case.json`. If the case has no `info`, it shows the `info` that the
+incident made (see [seed incidents](seed-incident.md#the-info-object)). The case detail API also supplies the labels
+that match the case's `incidents` and `noise` IDs.
 
 | Field | Contents |
 | --- | --- |

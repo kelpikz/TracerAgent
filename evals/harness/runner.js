@@ -2,10 +2,11 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { Worker } from 'node:worker_threads';
 import { agentDefaults, runAgent, validateAgent } from './agent.js';
+import { ensureData } from './data.js';
 import { errorDetails } from './errors.js';
 import { gradeWithJudge, judgeDefaults } from './judge.js';
 import { scoreRun } from './score.js';
-import { caseDir, graderKinds, newRunId, readJson, readOptional, repoDir, writeRun } from './storage.js';
+import { caseDir, graderKinds, newRunId, readJson, readOptional, writeRun } from './storage.js';
 
 const deterministicTimeoutMs = 30_000;
 
@@ -92,8 +93,8 @@ export async function runCase(testCase, runId, judge, agent) {
   const run = createRun(testCase.id, runId, judge, agent);
   await writeRun(run, { initial: true });
   try {
-    const dataDir = join(repoDir, 'data', testCase.scenario);
     validateAgent(run.agent_settings);
+    const dataDir = await ensureData(testCase);
     run.transcript = await runAgent(testCase, dataDir, run.agent_settings);
     run.agent = run.transcript.agent ?? null;
     const labels = await readJson(join(dataDir, 'labels.json'));

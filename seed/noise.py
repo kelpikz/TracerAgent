@@ -5,24 +5,37 @@ Each item is an overlay on the baseline:
   logs       extra log lines
   traces     extra traces
   orders     extra orders
+  events     extra change events (deploys, config changes)
   drop_logs  baseline log lines that the item replaces: {service, msg, from, to}
+  drop_traces, drop_orders  baseline trace IDs and order IDs that the item replaces
+             (their logs go too). The dashboard toggles do not support these. Only incidents use them.
   alerts     alert history that the item causes
+  info       optional text for the Info tab of an eval case (incidents set it)
+
+Each item gets its own random generator, seeded from its ID. A new item does not change the data of the others.
 
 generate.py calls build() after the baseline is complete, so the baseline does not change.
 The dashboard applies the overlays in the browser (toggles). apply() does the same in Python.
 """
 import copy
+import random
 from contextlib import contextmanager
 
-DATA_KEYS = ("metrics", "logs", "traces", "orders", "drop_logs")
+DATA_KEYS = ("metrics", "logs", "traces", "orders", "events", "drop_logs", "drop_traces", "drop_orders")
 ITEMS = []
 
 
-def item(**meta):
-    def wrap(fn):
-        ITEMS.append((meta, fn))
-        return fn
-    return wrap
+def registry(items):
+    """Make an @item decorator that adds to `items`."""
+    def item(**meta):
+        def wrap(fn):
+            items.append((meta, fn))
+            return fn
+        return wrap
+    return item
+
+
+item = registry(ITEMS)
 
 
 def idx(h, m=0):
@@ -38,6 +51,8 @@ class Ctx:
     def __init__(self, g, by_key):
         self.g, self.by_key, self.N = g, by_key, g.MINUTES
         self.delta, self.alerts, self.drop = {}, [], []
+        self.events, self.drop_traces, self.drop_orders, self.info = [], [], [], None
+        self.base_orders = g.ORDERS  # baseline orders (raw), read before capture() swaps the list
 
     def base(self, name, **labels):
         return self.by_key[key(name, labels)]["values"]
@@ -59,6 +74,22 @@ class Ctx:
         self.alerts.append({"name": name, "severity": severity, "fired_at": g.iso(g.at(fired)),
                             "resolved_at": g.iso(g.at(resolved)) if resolved < self.N else None,
                             "summary": summary})
+
+    def event(self, type_, i, service, summary, by="ops", **fields):
+        g = self.g
+        self.events.append(dict({"type": type_, "ts": g.iso(g.at(i)), "service": service,
+                                 "summary": summary, "by": by}, **fields))
+
+    def drop_orders_created(self, i0, i1):
+        """Remove baseline sample orders created in minutes [i0, i1), with their traces and logs."""
+        g = self.g
+        lo, hi = g.at(i0), g.at(i1)
+        for o in self.base_orders:
+            if lo <= o["created_at"] < hi:
+                self.drop_orders.append(o["order_id"])
+                for t in o["timeline"]:
+                    if t["trace_id"] and t["trace_id"] not in self.drop_traces:
+                        self.drop_traces.append(t["trace_id"])
 
     def fire_for(self, name, severity, series, labels, cond, need, text):
         """Alert when cond(value) is true for `need` minutes in a row."""
@@ -97,19 +128,28 @@ def capture(g):
         g.LOGS, g.TRACES, g.ORDERS = saved
 
 
-def build(g, by_key):
+def build(g, by_key, items=ITEMS):
     out = []
-    for meta, fn in ITEMS:
+    for meta, fn in items:
         c = Ctx(g, by_key)
-        with capture(g) as box:
-            fn(g, c)
+        saved = g.R
+        g.R = random.Random(f"{g.SEED}:{meta['id']}")
+        try:
+            with capture(g) as box:
+                fn(g, c)
+        finally:
+            g.R = saved
         out.append(dict(meta,
                         metrics=c.metrics(),
                         logs=[g.clean(e) for e in sorted(box["logs"], key=lambda e: e["ts"])],
                         traces=[g.trace_record(sp) for sp in sorted(box["traces"], key=lambda sp: sp[0]["start"])],
                         orders=[g.clean(o) for o in box["orders"]],
+                        events=c.events,
                         drop_logs=c.drop,
-                        alerts=c.alerts))
+                        drop_traces=c.drop_traces,
+                        drop_orders=c.drop_orders,
+                        alerts=c.alerts,
+                        **({"info": c.info} if c.info else {})))
     return out
 
 
@@ -125,6 +165,13 @@ def apply(bundle, items, name):
         for r in n["drop_logs"]:
             b["logs"] = [e for e in b["logs"] if not (e["service"] == r["service"] and e["msg"] == r["msg"]
                                                       and r["from"] <= e["ts"] < r["to"])]
+        gone = set(n.get("drop_traces", []))
+        if gone:
+            b["traces"] = [t for t in b["traces"] if t["trace_id"] not in gone]
+            b["logs"] = [e for e in b["logs"] if e.get("trace_id") not in gone]
+        orders_gone = set(n.get("drop_orders", []))
+        b["orders"] = [o for o in b["orders"] if o["order_id"] not in orders_gone]
+        b["events"] += n.get("events", [])
         b["logs"] += n["logs"]
         b["traces"] += n["traces"]
         b["orders"] += n["orders"]
@@ -132,6 +179,7 @@ def apply(bundle, items, name):
     b["logs"].sort(key=lambda e: e["ts"])
     b["traces"].sort(key=lambda t: t["start"])
     b["orders"].sort(key=lambda o: o["created_at"])
+    b["events"].sort(key=lambda e: e["ts"])
     b["alerts"]["history"].sort(key=lambda a: a["fired_at"])
     b["alerts"]["firing"] = [a for a in b["alerts"]["history"] if a["resolved_at"] is None]
     firing = {a["name"] for a in b["alerts"]["firing"]}

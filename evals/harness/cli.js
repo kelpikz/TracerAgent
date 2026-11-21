@@ -1,5 +1,6 @@
 import { parseArgs } from 'node:util';
 import { validateAgent } from './agent.js';
+import { generateData } from './data.js';
 import { validateJudge } from './judge.js';
 import { runCase } from './runner.js';
 import { graderKinds, listCases, readCase, validId, validRunId } from './storage.js';
@@ -52,7 +53,15 @@ async function main([command, ...args]) {
     for (const testCase of await listCases()) console.log(`${testCase.id}  ${testCase.title}`);
     return;
   }
-  if (command !== 'run') throw new Error('Use list, run <case-id>, or run --all.');
+  if (command === 'data') {
+    const all = args.length === 1 && args[0] === '--all';
+    if (!all && (args.length !== 1 || !validId(args[0]))) throw new Error('Use data <case-id> or data --all.');
+    const cases = all ? await listCases() : [await readCase(args[0])];
+    if (!cases[0] && !all) throw new Error(`Case ${args[0]} does not exist.`);
+    for (const testCase of cases) await generateData(testCase);
+    return;
+  }
+  if (command !== 'run') throw new Error('Use list, data <case-id>, data --all, run <case-id>, or run --all.');
   const { all, id, runId, judge, agent } = parseRunArgs(args);
   const cases = all ? await listCases() : [await readCase(id)];
   if (!cases[0] && !all) throw new Error(`Case ${id} does not exist.`);

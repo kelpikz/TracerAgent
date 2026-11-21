@@ -1,8 +1,8 @@
-import { stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { gradeWithJudge, judgeDefaults, validateJudge } from '../../../../evals/harness/judge.js';
 import { gradeDeterministic } from '../../../../evals/harness/runner.js';
+import { hasData } from '../../../../evals/harness/data.js';
 import { scoreRun } from '../../../../evals/harness/score.js';
 import {
   caseDir, graderKinds, newRunId, readCase, readJson, readOptional, repoDir,
@@ -62,6 +62,29 @@ async function checkNoise(testCase, dataDir, labels, add) {
     add('error', 'noise', `Unknown noise ID for ${testCase.scenario}: ${unknown.join(', ')}.`);
   } else if (invalid.length === 0) {
     add('ok', 'noise', testCase.noise.join(', '));
+  }
+}
+
+function checkIncidents(testCase, labels, info, add) {
+  const ids = testCase.incidents ?? [];
+  if (ids.length === 0) return;
+  const known = new Map((Array.isArray(labels) ? labels : []).map(label => [label?.id, label]));
+  const unknown = ids.filter(id => !known.has(id));
+  if (unknown.length) {
+    add('error', 'incidents', `No label for ${unknown.join(', ')} in data/${testCase.scenario}/labels.json. `
+      + 'Add the incident to seed/incidents.py and generate the data again.');
+    return;
+  }
+  add('ok', 'incidents', ids.join(', '));
+  for (const id of ids) {
+    const generated = known.get(id).info;
+    if (!generated) add('warning', `incident ${id}`, 'Set c.info in the incident so the Info tab can show it.');
+    const signals = (info ?? generated)?.signals ?? [];
+    signals.forEach(({ when, dashboard }, index) => {
+      if (!when?.trim() || !dashboard) {
+        add('warning', `incident ${id} signals[${index}]`, 'Give each signal a UTC time and a dashboard link.');
+      }
+    });
   }
 }
 
@@ -161,7 +184,9 @@ async function checkCase(args, report, add) {
     return;
   }
 
-  if (!testCase.info) {
+  if (!testCase.info && testCase.incidents?.length) {
+    add('ok', 'info', 'The Info tab uses the info from the incident.');
+  } else if (!testCase.info) {
     add('warning', 'info', 'Add an info object for the Info tab.');
   } else {
     add('ok', 'info', 'Case info has valid fields.');
@@ -173,19 +198,24 @@ async function checkCase(args, report, add) {
   }
 
   const dataDir = join(repoDir, 'data', testCase.scenario);
-  if (!(await stat(dataDir, { throwIfNoEntry: false }))?.isDirectory()) {
-    add('error', 'scenario', `Missing scenario folder: data/${testCase.scenario}/.`);
+  if (!(await hasData(testCase))) {
+    add('error', 'scenario', `No data in data/${testCase.scenario}/. Run: npm run eval -- data ${id}`);
     return;
   }
-  add('ok', 'scenario', `data/${testCase.scenario}/`);
+  if (testCase.scenario !== id) {
+    add('warning', 'scenario', `Use the case ID (${id}) as the scenario, so the case has its own data.`);
+  } else {
+    add('ok', 'scenario', `data/${testCase.scenario}/`);
+  }
   const labels = await readJson(join(dataDir, 'labels.json'));
   await checkNoise(testCase, dataDir, labels, add);
+  checkIncidents(testCase, labels, testCase.info, add);
 
-  const path = transcriptPath === undefined ? join(caseDir(id), 'sample_transcript.json') : resolve(transcriptPath);
+  const path = transcriptPath === undefined ? join(caseDir(id), 'fixtures', 'good_transcript.json') : resolve(transcriptPath);
   let transcript;
   try {
     transcript = await loadTranscript(path);
-    add('ok', 'transcript', `${transcript.steps.length} steps in ${transcriptPath ?? 'sample_transcript.json'}.`);
+    add('ok', 'transcript', `${transcript.steps.length} steps in ${transcriptPath ?? 'fixtures/good_transcript.json'}.`);
   } catch (error) {
     add('error', 'transcript', error.message);
     return;

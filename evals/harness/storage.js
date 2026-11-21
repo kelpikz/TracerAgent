@@ -74,6 +74,8 @@ export async function readCase(id) {
     title: [typeof testCase.title === 'string', 'must be a string'],
     description: [typeof testCase.description === 'string', 'must be a string'],
     noise: [Array.isArray(testCase.noise), 'must be an array'],
+    incidents: [testCase.incidents === undefined || (Array.isArray(testCase.incidents)
+      && testCase.incidents.every(validId)), 'must be an array of incident IDs'],
     tags: [Array.isArray(testCase.tags), 'must be an array'],
     timeout_s: [Number.isFinite(testCase.timeout_s) && testCase.timeout_s > 0
       && testCase.timeout_s * 1000 <= 2_147_483_647, 'must be a positive number within the Node.js timer limit'],

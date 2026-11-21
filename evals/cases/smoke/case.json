@@ -2,7 +2,7 @@
   "id": "smoke",
   "title": "Smoke test",
   "description": "Checks that the harness, graders, and pi judge work.",
-  "scenario": "baseline",
+  "scenario": "smoke",
   "noise": [],
   "input": "Are there any firing alerts right now?",
   "tags": ["smoke"],

@@ -30,6 +30,15 @@ There are 12 noise items in `seed/noise.py`. Each item is an overlay on the base
   Use `--noise <id>,<id>` for some items and `--name <scenario>` for a different folder.
   `labels.json` has the truth for each item. Use it to grade the agent. Do not give it to the agent.
 
+## Incidents
+
+An incident is a real fault for an eval case. Incidents are in `seed/incidents.py` and use the same overlays as noise.
+Each incident also makes the text for the Info tab of the eval page.
+
+- `python seed/generate.py --incidents stripe_webhook_secret --noise price_scraper --name <case-id>`
+  writes one incident and one noise item to `data/<case-id>/`.
+- `stripe_webhook_secret` (08:12 to 09:06 UTC): Payment rejects all Stripe webhooks after a secret rotation.
+
 | # | id | When (UTC) | Alerts |
 |---|---|---|---|
 | 1 | `night_declines` | 03:00–05:00 | PaymentSuccessLow, CheckoutSuccessLow |
@@ -58,6 +67,7 @@ Logs from scheduled jobs use the service name `cron`.
 | `events.json` | Deploys and config changes. |
 | `alerts.json` | Alert rules, the alerts that fire now, and the alert history. |
 | `topology.json` | Services, calls, Kafka topics and consumer groups, endpoints. |
+| `meta.json` | Scenario, seed, window start and end, and `now` (the window end). |
 | `data.js` | All of the above in one file, for the dashboard. |
 
 ## What "normal" looks like
@@ -83,10 +93,14 @@ Install the dependencies. Install the `pi` CLI and make sure that it is on your 
 The LLM graders use `pi` with your ChatGPT subscription. To sign in, run `pi auth login openai-codex`.
 If `pi` is missing or you are signed out, the runner skips the LLM graders.
 
-Run the smoke test to check the replay agent and all four graders.
+Each case has its own data in `data/<case-id>/`. The data is not in git. The runner makes it from the case's
+`incidents` and `noise` when the folder is missing. Real faults for cases are in `seed/incidents.py`.
+
+Set the agent command, then run the smoke test to check the agent and all four graders.
 
 ```sh
 npm install
+npm run eval -- data --all
 npm run eval -- list
 npm run eval -- run smoke
 npm run eval -- run noise-price-import-replica-lag
@@ -126,9 +140,8 @@ The UI is a React app in `evals/ui/src`. It uses Vite, Tailwind CSS, and shadcn/
 - `npm run ui:build` builds the UI into `evals/ui/dist`. The server needs this folder.
 - `npm run ui:dev` starts the Vite dev server with hot reload. Start `node evals/server.js` first. The dev server sends `/api`, `/dashboard`, and `/data` requests to port 4317.
 
-- Set `EVAL_AGENT_CMD` to run your agent. You can also set `agent.command` in `evals/config.json`. The environment variable takes priority. If both are empty, the runner uses `sample_transcript.json`.
+- Set `EVAL_AGENT_CMD` to run your agent. You can also set `agent.command` in `evals/config.json`. The environment variable takes priority. If both are empty, the run stops with an error. The agent in this repository is `node agent/cli.js`.
 - The agent command receives `model` and `effort` in the JSON on standard input.
-  The replay agent ignores these fields.
 - Each run writes a JSON file to `evals/results/<case-id>/`. Open an earlier run from **Run history**.
 
 | Environment variable | Default | Use |
@@ -139,6 +152,7 @@ The UI is a React app in `evals/ui/src`. It uses Vite, Tailwind CSS, and shadcn/
 | `EVAL_JUDGE_THINKING` | `high` | Set the default thinking level. |
 | `EVAL_PI_CMD` | `pi` | Set the executable name or path. On Windows, use `pi.cmd` for a full path. |
 | `EVAL_JUDGE_TIMEOUT_S` | `600` | Set the time limit in seconds for each `pi` command during a run. |
+| `EVAL_PYTHON` | `python` | Set the Python command that generates case data. |
 
 For the case files and agent input and output, see the [eval file contract](evals/harness/transcript.md).
 Use the [create-eval-case skill](.claude/skills/create-eval-case/SKILL.md) to write a case. Run `node .claude/skills/create-eval-case/scripts/check-case.js <case-id>` to check its graders.
