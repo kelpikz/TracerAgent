@@ -26,7 +26,7 @@ Run the commands in this skill from the repository root.
 
 ## 1. Design the incident
 
-Decide the fault before you write code. Write down:
+Decide the fault if you have not already and share it with the user and get their approval before you write code. Write down:
 
 - **The fault** and its **trigger**, for example a config change, a deploy, or a provider problem.
 - **The time window** in the fixed day. Read the `when` field of each noise item in `seed/noise.py`.
@@ -55,7 +55,6 @@ npm run eval -- data <case-id>
 
 Read `data/<case-id>/labels.json` and check the `info` of the incident against the data.
 Read the metrics, logs, traces, orders, events, and alerts in the fault window. Compare them with a normal window.
-Ask the user to open the case in the eval UI (`npm run eval:ui`) if they want to see the Info tab and the dashboard.
 
 ## 4. Write `case.json`
 
@@ -75,6 +74,7 @@ fixtures/
 reviews/
   correctness.md
   discrimination.md
+  difficulty.md
 ```
 
 Use these fields. The runner reads them with `readCase` in `evals/harness/storage.js`.
@@ -105,7 +105,7 @@ Do not name the cause, the faulty service, or the change. Do not give hints that
 
 Follow the [grader guide](references/write-graders.md). It covers:
 
-1. The evidence map: each fact, the tools that show it, the time window, the minimum path, and the false leads.
+1. The evidence map: each fact, the tools that show it, the time window, the minimum path, the normal path, and the false leads.
 2. The trajectory grader: direction, efficiency, and course correction.
 3. The outcome grader: root cause, mechanism and trigger, impact, and next steps.
 4. The fixtures: `fixtures/good_transcript.json` and `fixtures/bad_transcript.json`, with real tool results.
@@ -113,14 +113,18 @@ Follow the [grader guide](references/write-graders.md). It covers:
 
 ## 6. Review the case
 
-Two independent reviewers check the case. Start both at the same time with the Agent tool, as two
+Three independent reviewers check the case. Start all three at the same time with the Agent tool, as
 `general-purpose` subagents. Give each one only the case ID, the paths below, and its rubric file.
-Do not give them your design notes or the other review. Each reviewer writes its report to the case folder.
+Do not give them your design notes or the other reviews. Each reviewer writes its report to the case folder.
 
 | Reviewer | Rubric | Report |
 | --- | --- | --- |
 | Correctness | [review-correctness.md](references/review-correctness.md) | `evals/cases/<case-id>/reviews/correctness.md` |
 | Discrimination | [review-discrimination.md](references/review-discrimination.md) | `evals/cases/<case-id>/reviews/discrimination.md` |
+| Difficulty | [review-difficulty.md](references/review-difficulty.md) | `evals/cases/<case-id>/reviews/difficulty.md` |
+
+The difficulty reviewer solves the case blind with `scripts/run-tool.js` before it reads the answer.
+**The target has a  maximum difficulty score (35/35) with a fair case.** Surface to the user how the independent reviewer rated the difficulty of the problem.
 
 Use this prompt for each reviewer. Replace the values in angle brackets.
 
@@ -133,11 +137,15 @@ Write the report to evals/cases/<case-id>/reviews/<report file>.
 ```
 
 ## 7. Fix and report
+Only fix the correctness bugs reported by the [review-correctness.md](references/review-correctness.md). The other fixes should only be done after asking the user's permission.
 
-1. Read both reports. Fix each finding in the seed, the case, or the graders.
+The following are the instructions to follow when the user asks you to fix the findings of the report. 
+1. Read the three reports. Fix each finding in the seed, the case, or the graders.
 2. Generate the data again if the seed changed. Run the checker again.
-3. Run both reviewers again one time. They overwrite their reports.
-4. Tell the user the case ID, the scores from both reviews, the findings that are still open, and how to run the case:
+3. Run the three reviewers again one time. They overwrite their reports.
+4. If the difficulty score is below 35/35, fix its findings and run only the difficulty reviewer again.
+   Stop after three difficulty rounds in total, and report the parts that are still below 5.
+5. Tell the user the case ID, the scores from the three reviews, the findings that are still open, and how to run the case:
    `EVAL_AGENT_CMD="node agent/cli.js" npm run eval -- run <case-id>` and the eval UI.
 
 Each grader gives up to 5 points. The total is out of 10.

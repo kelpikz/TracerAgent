@@ -31,13 +31,18 @@ Make this table before you write a grader. Both graders use it. Take the facts f
 
 Also record:
 - **The minimum path.** The smallest set of calls that gives all the necessary evidence. Count the calls.
+- **The normal path.** The calls that a good agent makes when it follows its prompt
+  (`agent/architectures/*.js`, "How to work"). Start from the minimum path. Add the checks that the prompt asks for
+  (changes, cron logs, KPIs, "did it stop"). Add one call for each extra service, because most tools look at one
+  service at a time. Count the calls. It is usually about 2 to 3 times the minimum path for an angent doing an exhaustive check. So don't penalize it for it.
+  If real runs of the case exist (`evals/results/<case-id>/`), compare with their call counts.
 - **The dead ends.** The calls that a weak agent can make first, and the result that must make it change course.
 
 ## 2. Trajectory grader
 
 The trajectory grader checks the trail of the agent:
 - **Direction.** Did it check the right metrics, in the right services, with the right tools, before its conclusion?
-- **Efficiency.** How many calls did it use, compared with the minimum path?
+- **Efficiency.** How many calls did it use, compared with the normal path?
 - **Course correction.** When it went down a wrong path, did it notice and change direction?
 
 ### `trajectory/tests.js`
@@ -48,7 +53,7 @@ Make one item for each necessary row in the evidence map, and one item for effic
 | --- | --- |
 | One item for each necessary fact (`checked_<fact>`) | 1: a successful call to an acceptable tool, with the right service or label, and a time window that covers the fact. 0.5: the right tool and service, but the window misses part of the fact. 0: no call, a failed call, or the wrong service. |
 | `checked_<cause>_before_conclusion` (only when the order matters) | 1: the agent gets the cause evidence after the symptom evidence that leads to it. 0: the order is wrong or a step is missing. |
-| `efficiency` | 1: at most 1.5 times the minimum path. Then decrease to 0 at 3 times the minimum path. Count repeated identical calls as waste. |
+| `efficiency` | 1: at most 2.5 times the normal path. Then decrease to 0 at 4 times the normal path. Do not use the minimum path here: a good agent that follows its prompt gets 0. |
 
 Rules:
 - Accept every tool that shows the fact. Do not require one tool when another tool gives the same evidence.
@@ -74,11 +79,13 @@ The judge grades what needs judgment. Use these items, and add items for the cas
    - 0. The agent stays on the false lead, or it never checks the lead and the answer depends on it.
    Name the false leads from the evidence map in this item.
 3. **efficiency**
-   - 1. Most calls add new evidence. The agent does not repeat calls or query unrelated services.
-   - 0.5. Some wasted calls, but the investigation stays on track.
-   - 0. Many repeated or unrelated calls.
+   Do not count the calls of the normal path as waste. Waste is: the same query again with no new purpose, the same
+   fact read from two tools, and calls on unrelated areas after the cause is clear. Name these unrelated areas for the case.
+   - 1. Two or fewer wasted calls.
+   - 0.5. Three to six wasted calls, but the investigation stays on track.
+   - 0. More than six wasted calls, or the investigation goes off track.
 
-Write the expected path and the false leads in the rubric. The judge does not see the labels or the data.
+Write the expected path, the normal path (with its call count), and the false leads in the rubric. The judge does not see the labels or the data.
 
 ## 3. Outcome grader
 
