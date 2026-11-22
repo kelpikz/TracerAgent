@@ -1,14 +1,19 @@
-import type { ErrorInfo, Status, Step } from './types';
+import type { ErrorInfo, RunSummary, Status, Step } from './types';
 
 export const statusLabels: Record<Status | 'none', string> = {
   done: 'Done',
   running: 'Running',
   error: 'Error',
+  interrupted: 'Interrupted',
   skipped: 'Skipped',
   missing: 'Missing',
   pending: 'Pending',
   none: 'No runs',
 };
+
+export function runStatusLabel(run: RunSummary) {
+  return run.status === 'running' ? run.steps == null ? 'Investigating' : 'Grading' : statusLabels[run.status];
+}
 
 const dateFormat = new Intl.DateTimeFormat(undefined, {
   month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
@@ -18,6 +23,25 @@ export function formatTime(iso: string | null | undefined) {
   if (!iso) return '';
   const date = new Date(iso);
   return Number.isNaN(date.getTime()) ? iso : dateFormat.format(date);
+}
+
+/** Time since a date, such as "45s ago", "1h 25m ago" or "1d 4h ago". */
+export function formatAgo(iso: string | null | undefined, now = Date.now()) {
+  if (!iso) return '';
+  const s = Math.floor((now - new Date(iso).getTime()) / 1000);
+  if (!Number.isFinite(s)) return iso;
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
+  if (d > 0) return `${d}d ${h % 24}h ago`;
+  if (h > 0) return `${h}h ${m % 60}m ago`;
+  return `${m}m ago`;
+}
+
+/** A token count, such as "875", "10.7k" or "1.2M". */
+export function formatTokens(n: number) {
+  if (n < 1000) return String(n);
+  if (n < 1_000_000) return `${(n / 1000).toFixed(1)}k`;
+  return `${(n / 1_000_000).toFixed(1)}M`;
 }
 
 export function formatDuration(start?: string | null, end?: string | null) {

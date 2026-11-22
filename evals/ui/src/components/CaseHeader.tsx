@@ -1,21 +1,16 @@
 import { AudioWaveform, History, Layers, LoaderCircle, Play, Tag, Timer } from 'lucide-react';
 import { RunSettings, type RunSettingsProps } from '@/components/RunSettings';
-import { ScoreChip } from '@/components/ScoreChip';
-import { StatusBadge } from '@/components/StatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatTime } from '@/lib/format';
 import type { CaseDetail } from '@/lib/types';
 
 interface CaseHeaderProps {
   detail: CaseDetail | null;
-  runId: string | null;
   running: boolean;
   settings: RunSettingsProps;
   onRun: () => void;
-  onSelectRun: (runId: string) => void;
+  onOpenRuns: () => void;
 }
 
 export function CaseHeaderSkeleton() {
@@ -31,7 +26,7 @@ export function CaseHeaderSkeleton() {
   );
 }
 
-export function CaseHeader({ detail, runId, running, settings, onRun, onSelectRun }: CaseHeaderProps) {
+export function CaseHeader({ detail, running, settings, onRun, onOpenRuns }: CaseHeaderProps) {
   if (!detail) return <CaseHeaderSkeleton />;
   return (
     <header className="space-y-4">
@@ -45,21 +40,9 @@ export function CaseHeader({ detail, runId, running, settings, onRun, onSelectRu
         </div>
 
         <div className="flex max-w-full flex-wrap items-center gap-2">
-          <Select value={runId ?? undefined} onValueChange={onSelectRun} disabled={detail.runs.length === 0}>
-            <SelectTrigger className="min-w-52 max-w-full overflow-hidden" aria-label="Run history">
-              <History className="size-4 shrink-0 text-muted-foreground" />
-              <SelectValue placeholder="No runs yet" />
-            </SelectTrigger>
-            <SelectContent>
-              {detail.runs.map(run => (
-                <SelectItem key={run.run_id} value={run.run_id}>
-                  <span className="tabular-nums">{formatTime(run.started_at)}</span>
-                  <StatusBadge status={run.status} className="px-1.5 py-0 text-[11px]" />
-                  <ScoreChip total={run.score_total} />
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Button variant="outline" onClick={onOpenRuns} className="xl:hidden">
+            <History /> Runs
+          </Button>
           <div className="flex max-w-full flex-wrap items-center gap-2">
             <RunSettings {...settings} disabled={running} />
             <Button onClick={onRun} disabled={running} className="min-w-24">

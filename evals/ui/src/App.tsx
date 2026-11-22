@@ -8,6 +8,7 @@ import { GraderFilesTab } from '@/components/GraderFilesTab';
 import { InfoTab } from '@/components/InfoTab';
 import { RawJsonTab } from '@/components/RawJsonTab';
 import { ResultsTab } from '@/components/ResultsTab';
+import { RunHistory } from '@/components/RunHistory';
 import { Logo, SidebarContent } from '@/components/Sidebar';
 import { TranscriptTab } from '@/components/TranscriptTab';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -25,6 +26,7 @@ export default function App() {
   const evals = useEvals();
   const { cases, casesError, caseId, detail, runId, run, runLoading, notice, running } = evals;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [runsOpen, setRunsOpen] = useState(false);
   const [chosenTab, setTab] = useState<string | null>(null);
   const [dashLink, setDashLink] = useState<DashboardLink | null>(null);
   const dashboardPanel = useRef<HTMLDivElement>(null);
@@ -67,6 +69,17 @@ export default function App() {
     />
   );
 
+  const runHistory = (afterSelect?: () => void) => (
+    <RunHistory
+      runs={detail?.runs ?? null}
+      runId={runId}
+      onSelect={id => {
+        evals.selectRun(id);
+        afterSelect?.();
+      }}
+    />
+  );
+
   const steps = run?.transcript?.steps.length;
 
   return (
@@ -78,6 +91,14 @@ export default function App() {
           <SheetTitle className="sr-only">Cases</SheetTitle>
           <SheetDescription className="sr-only">Choose a test case.</SheetDescription>
           {sidebar(() => setMenuOpen(false))}
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={runsOpen} onOpenChange={setRunsOpen}>
+        <SheetContent side="right">
+          <SheetTitle className="sr-only">Runs</SheetTitle>
+          <SheetDescription className="sr-only">Choose a run.</SheetDescription>
+          {runHistory(() => setRunsOpen(false))}
         </SheetContent>
       </Sheet>
 
@@ -122,7 +143,7 @@ export default function App() {
 
           {(caseId || (!cases && !casesError)) && (
             <div className="space-y-6">
-              <CaseHeader detail={detail} runId={runId} running={running} settings={{ agent, judge }} onRun={startRun} onSelectRun={evals.selectRun} />
+              <CaseHeader detail={detail} running={running} settings={{ agent, judge }} onRun={startRun} onOpenRuns={() => setRunsOpen(true)} />
               {detail ? <CaseInput input={detail.input} /> : <Skeleton className="h-36 w-full rounded-xl" />}
 
               <Tabs value={tab} onValueChange={setTab} className="gap-6">
@@ -185,6 +206,8 @@ export default function App() {
           )}
         </main>
       </div>
+
+      {caseId && <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 border-l bg-sidebar xl:block">{runHistory()}</aside>}
     </div>
   );
 }

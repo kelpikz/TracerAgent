@@ -1,4 +1,4 @@
-import { Bot, ChevronRight, CircleSlash, Clock, Code2, Flag, Gauge, LoaderCircle, MessageSquareText, Play, Route, Scale, Sparkles, Timer, Trophy, Wrench } from 'lucide-react';
+import { Bot, ChevronRight, CircleSlash, Clock, Code2, Coins, Flag, Gauge, Hash, LoaderCircle, MessageSquareText, Play, Route, Scale, Sparkles, Timer, Trophy, Wrench } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CodeBlock } from '@/components/CodeBlock';
 import { CopyButton } from '@/components/CopyButton';
@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { average, formatDuration, formatTime, scoreOf, scoreText, scoreTone } from '@/lib/format';
+import { average, formatDuration, formatTime, formatTokens, scoreOf, scoreText, scoreTone } from '@/lib/format';
 import { judgeLabel } from '@/lib/useJudge';
 import type { Grade, GradeItem, GraderKind, Run, ScorePart } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -59,7 +59,7 @@ function ScoreCard({ run }: { run: Run }) {
             </p>
           ) : (
             <p className="text-sm font-medium text-muted-foreground">
-              {run.status === 'running' ? 'Waiting for the graders…' : 'No score'}
+              {run.status === 'running' ? (run.transcript ? 'Waiting for scores…' : 'Waiting for the agent…') : 'No score'}
             </p>
           )}
         </div>
@@ -319,26 +319,44 @@ function RunMeta({ run }: { run: Run }) {
   const agent = [run.agent?.name, run.agent?.model].filter(Boolean).join(' · ');
   const agentSettings = run.agent_settings;
   const calls = run.transcript?.steps.filter(step => step.type === 'tool_call').length;
+  const usage = run.transcript?.usage;
   return (
     <Card className="overflow-hidden">
-      <div className="grid grid-cols-2 gap-px bg-border @xl:grid-cols-5">
-        <Meta icon={Bot} label="Agent" className="col-span-2 @xl:col-span-1">
-          {agentSettings && (
-            <div className="font-mono text-[13px]" title={agentSettings.model}>
+      <div className="grid grid-cols-2 gap-px bg-border @xl:grid-cols-4 @5xl:grid-cols-[repeat(7,auto)]">
+        <Meta icon={Bot} label="Agent" className="col-span-2 @5xl:col-span-1">
+          {agentSettings ? (
+            <div className="font-mono text-[13px] whitespace-nowrap" title={`${agent} · ${agentSettings.effort}`}>
               {agentSettings.model.split('/').pop()} · {agentSettings.effort}
             </div>
+          ) : agent ? (
+            <div className="font-mono text-[13px]">{agent}</div>
+          ) : (
+            <span className="text-muted-foreground">Not started</span>
           )}
-          {agent && <div className="font-mono text-[13px]">{agent}</div>}
-          {!agentSettings && !agent && <span className="text-muted-foreground">Not started</span>}
         </Meta>
         <Meta icon={Scale} label="Judge">
-          {run.judge ? <span className="font-mono text-[13px]" title={`${run.judge.model} · ${run.judge.thinking}`}>{judgeLabel(run.judge)}</span> : <span className="text-muted-foreground">—</span>}
+          {run.judge ? <span className="font-mono text-[13px] whitespace-nowrap" title={`${run.judge.model} · ${run.judge.thinking}`}>{judgeLabel(run.judge)}</span> : <span className="text-muted-foreground">—</span>}
         </Meta>
         <Meta icon={Clock} label="Started"><span className="tabular-nums">{formatTime(run.started_at) || '—'}</span></Meta>
         <Meta icon={Timer} label="Duration">
-          {run.status === 'running' ? <span className="text-muted-foreground">Running…</span> : <span className="tabular-nums">{formatDuration(run.started_at, run.ended_at) || '—'}</span>}
+          {run.status === 'running' ? (
+            <span className="text-muted-foreground">{run.transcript ? 'Grading…' : 'Investigating…'}</span>
+          ) : <span className="tabular-nums">{formatDuration(run.started_at, run.ended_at) || '—'}</span>}
         </Meta>
         <Meta icon={Wrench} label="Tool calls"><span className="tabular-nums">{calls ?? '—'}</span></Meta>
+        <Meta icon={Hash} label="Tokens">
+          {usage?.input_tokens != null ? (
+            <div className="tabular-nums">
+              <div className="whitespace-nowrap">{formatTokens(usage.input_tokens)} in · {formatTokens(usage.output_tokens ?? 0)} out</div>
+              {!!usage.cache_read_tokens && <div className="text-xs font-normal text-muted-foreground">{formatTokens(usage.cache_read_tokens)} cached</div>}
+            </div>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
+        </Meta>
+        <Meta icon={Coins} label="Cost">
+          <span className="tabular-nums">{usage?.cost_usd != null ? `$${usage.cost_usd.toFixed(4)}` : '—'}</span>
+        </Meta>
       </div>
     </Card>
   );
@@ -384,10 +402,12 @@ export function ResultsTab({ run, loading, hasRuns, onRun, running }: { run: Run
       {run.status === 'running' && (
         <Alert className="border-info/30 bg-info/[0.06] text-info">
           <LoaderCircle className="animate-spin" />
-          <AlertDescription className="text-info">The agent and the graders are working. This page updates by itself.</AlertDescription>
+          <AlertDescription className="text-info">
+            {run.transcript ? 'The graders are scoring the agent’s report.' : 'The agent is investigating the incident.'}
+          </AlertDescription>
         </Alert>
       )}
-      {run.error && <ErrorAlert error={run.error} title="The run failed" />}
+      {run.error && <ErrorAlert error={run.error} title={run.status === 'interrupted' ? 'Run interrupted' : 'The run failed'} />}
       <ScoreCard run={run} />
       <RunMeta run={run} />
       <AgentAnswer run={run} />

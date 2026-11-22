@@ -3,11 +3,18 @@ import { api } from './api';
 import type { AgentChoice, CaseDetail, CaseSummary, JudgeChoice, Run, RunSummary } from './types';
 
 const POLL_MS = 1500;
-const MAX_FAILURES = 8;
+const SLOW_POLL_MS = 5000;
+const CONNECTION_NOTICE = 'Lost contact with the eval server. Trying again.';
 
 function summaryOf(run: Run): RunSummary {
   const { run_id, status, started_at, ended_at, agent } = run;
-  return { run_id, status, started_at, ended_at, agent, score_total: run.score?.total ?? null };
+  return {
+    run_id, status, started_at, ended_at, agent,
+    judge_model: run.judge?.model ?? null,
+    steps: run.transcript?.steps.length ?? null,
+    cost_usd: run.transcript?.usage?.cost_usd ?? null,
+    score_total: run.score?.total ?? null,
+  };
 }
 
 function readHash() {
@@ -69,24 +76,21 @@ export function useEvals() {
     const check = async () => {
       try {
         const next = await api.run(forCase, forRun);
+        if (failures >= 8) setNotice(current => current === CONNECTION_NOTICE ? null : current);
         failures = 0;
         applyRun(forCase, next);
         if (next.status !== 'running') {
           watches.current.delete(forRun);
           return;
         }
-      } catch (error) {
-        // The run file can take a moment to appear. Wait a few times before we give up.
+      } catch {
+        // Keep checking after a server restart, even if it takes a while to come back.
         failures += 1;
-        if (failures >= MAX_FAILURES) {
-          watches.current.delete(forRun);
-          if (selection.current.caseId === forCase) {
-            setNotice(`Cannot read the run. ${error instanceof Error ? error.message : ''}`.trim());
-          }
-          return;
+        if (failures === 8 && selection.current.caseId === forCase && selection.current.runId === forRun) {
+          setNotice(CONNECTION_NOTICE);
         }
       }
-      setTimeout(check, POLL_MS);
+      setTimeout(check, failures >= 8 ? SLOW_POLL_MS : POLL_MS);
     };
     setTimeout(check, POLL_MS);
   }, [applyRun]);
@@ -160,6 +164,9 @@ export function useEvals() {
         const list = await api.cases();
         if (!live) return;
         setCases(list);
+        for (const item of list) {
+          if (item.last_run?.status === 'running') watchRun(item.id, item.last_run.run_id);
+        }
         const hash = readHash();
         const first = list.find(item => item.id === hash.caseId) ?? list[0];
         if (first) await openCase(first.id, first.id === hash.caseId ? hash.runId : null);
@@ -170,7 +177,7 @@ export function useEvals() {
     return () => {
       live = false;
     };
-  }, [openCase]);
+  }, [openCase, watchRun]);
 
   const lastStatus = cases?.find(item => item.id === caseId)?.last_run?.status;
   const running = starting === caseId && caseId !== null ? true : lastStatus === 'running';

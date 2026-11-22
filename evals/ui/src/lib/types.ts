@@ -1,9 +1,10 @@
-export type Status = 'done' | 'running' | 'error' | 'skipped' | 'missing' | 'pending';
+export type Status = 'done' | 'running' | 'error' | 'interrupted' | 'skipped' | 'missing' | 'pending';
 export type GraderKind = 'trajectory' | 'outcome';
 
 export interface AgentInfo {
   name?: string | null;
   model?: string | null;
+  effort?: string | null;
 }
 
 export interface RunSummary {
@@ -12,6 +13,9 @@ export interface RunSummary {
   started_at: string | null;
   ended_at: string | null;
   agent: AgentInfo | null;
+  judge_model?: string | null;
+  steps?: number | null;
+  cost_usd?: number | null;
   score_total?: number | null;
 }
 
@@ -127,12 +131,14 @@ export interface Step {
   result?: unknown;
   error?: ErrorInfo | string | null;
   duration_ms?: number;
+  /** The agent that made the step, in a multi-agent run. */
+  agent?: string;
 }
 
 export interface Transcript {
   steps: Step[];
   final_output: string;
-  usage?: { input_tokens?: number; output_tokens?: number };
+  usage?: { input_tokens?: number; output_tokens?: number; cache_read_tokens?: number; cost_usd?: number };
 }
 
 export interface JudgeChoice {
@@ -140,14 +146,34 @@ export interface JudgeChoice {
   thinking: string;
 }
 
+/** Model and effort for one agent of a multi-agent architecture. Unset fields use the run model and effort. */
+export interface RoleChoice {
+  model?: string;
+  effort?: string;
+}
+
 export interface AgentChoice {
   model: string;
   effort: string;
+  architecture?: string;
+  agents?: Record<string, RoleChoice>;
+}
+
+export interface ArchitectureRole {
+  name: string;
+  description: string;
+}
+
+export interface Architecture {
+  name: string;
+  description: string;
+  roles: ArchitectureRole[];
 }
 
 export interface JudgeOptions {
   default: JudgeChoice;
   agent_default: AgentChoice;
+  architectures?: Architecture[];
   models: string[];
   thinking: string[];
   error: string | null;

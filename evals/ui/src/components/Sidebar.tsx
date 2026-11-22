@@ -4,6 +4,7 @@ import { ScoreChip } from '@/components/ScoreChip';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { runStatusLabel } from '@/lib/format';
 import { useTheme, type Theme } from '@/lib/theme';
 import type { CaseSummary } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -134,7 +135,7 @@ export function SidebarContent({ cases, error, selectedId, onSelect }: SidebarPr
                     <span className="min-w-0 text-[13.5px] leading-snug font-medium">{testCase.title}</span>
                     <span className="mt-px flex shrink-0 items-center gap-1.5">
                       <ScoreChip total={testCase.last_run?.score_total} />
-                      <StatusBadge status={testCase.last_run?.status ?? 'none'} className="px-1.5 py-0 text-[11px]" />
+                      <StatusBadge status={testCase.last_run?.status ?? 'none'} label={testCase.last_run ? runStatusLabel(testCase.last_run) : undefined} className="px-1.5 py-0 text-[11px]" />
                     </span>
                   </div>
                   <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">{testCase.id}</div>
