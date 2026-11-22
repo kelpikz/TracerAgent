@@ -30,6 +30,8 @@ function parseRunArgs(args) {
       'judge-thinking': { type: 'string' },
       'agent-model': { type: 'string' },
       'agent-effort': { type: 'string' },
+      'agent-arch': { type: 'string' },
+      'agent-roles': { type: 'string' },
     },
     allowPositionals: true,
     tokens: true,
@@ -42,7 +44,13 @@ function parseRunArgs(args) {
   const runId = values['run-id'];
   if (runId !== undefined && !validRunId(runId)) throw new Error('Invalid run ID.');
   const judge = { model: values['judge-model'], thinking: values['judge-thinking'] };
-  const agent = { model: values['agent-model'], effort: values['agent-effort'] };
+  let agents;
+  try {
+    agents = values['agent-roles'] === undefined ? undefined : JSON.parse(values['agent-roles']);
+  } catch {
+    throw new Error('Use JSON for --agent-roles, for example {"critic":{"effort":"xhigh"}}.');
+  }
+  const agent = { model: values['agent-model'], effort: values['agent-effort'], architecture: values['agent-arch'], agents };
   validateJudge(judge);
   validateAgent(agent);
   return { all: values.all, id: positionals[0], runId, judge, agent };

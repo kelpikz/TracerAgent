@@ -5,12 +5,12 @@ import { createServer } from 'node:http';
 import { pipeline } from 'node:stream/promises';
 import { extname, join, normalize, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { agentDefaults, validateAgent } from './harness/agent.js';
+import { agentDefaults, listArchitectures, validateAgent } from './harness/agent.js';
 import { judgeDefaults, judgeThinkingLevels, runPi, validateJudge } from './harness/judge.js';
 import { createRun, failRun } from './harness/runner.js';
 import {
   caseDir, evalsDir, graderKinds, listCases, listRuns, newRunId, readCase,
-  readJson, readOptional, readRun, repoDir, validId, validRunId, writeRun,
+  readJson, readOptional, readRun, readRunStatus, repoDir, validId, validRunId, writeRun,
 } from './harness/storage.js';
 
 const distDir = join(evalsDir, 'ui', 'dist');
@@ -135,8 +135,8 @@ async function readRunSettings(request) {
     throw new Error('Use a judge object with optional model and thinking fields.');
   }
   if (!agent || typeof agent !== 'object' || Array.isArray(agent)
-      || Object.keys(agent).some(key => key !== 'model' && key !== 'effort')) {
-    throw new Error('Use an agent object with optional model and effort fields.');
+      || Object.keys(agent).some(key => !['model', 'effort', 'architecture', 'agents'].includes(key))) {
+    throw new Error('Use an agent object with optional model, effort, architecture and agents fields.');
   }
   validateJudge(judge);
   validateAgent(agent);
@@ -169,9 +169,11 @@ async function judgeOptions() {
   }
   const { models, error } = await cachedModelList.result;
   const defaults = judgeDefaults();
+  const architectures = await listArchitectures();
   return {
     default: defaults,
-    agent_default: agentDefaults(),
+    agent_default: { ...agentDefaults(), architecture: architectures.default ?? undefined },
+    architectures: architectures.items,
     models: models.length ? [...new Set([...models, defaults.model])].sort() : models,
     thinking: judgeThinkingLevels,
     error,
@@ -195,9 +197,13 @@ function launchRun(caseId, runId, settings) {
   if (judge.thinking !== undefined) args.push('--judge-thinking', judge.thinking);
   if (agent.model !== undefined) args.push('--agent-model', agent.model);
   if (agent.effort !== undefined) args.push('--agent-effort', agent.effort);
+  if (agent.architecture !== undefined) args.push('--agent-arch', agent.architecture);
+  if (agent.agents !== undefined) args.push('--agent-roles', JSON.stringify(agent.agents));
   let child;
   try {
-    child = spawn(process.execPath, args, { cwd: repoDir, stdio: 'ignore', windowsHide: true });
+    child = spawn(process.execPath, args, {
+      cwd: repoDir, stdio: 'ignore', windowsHide: true, detached: true,
+    });
   } catch (error) {
     void recordProcessError(caseId, runId, settings, error);
     return;
@@ -209,6 +215,7 @@ function launchRun(caseId, runId, settings) {
     const error = spawnError ?? new Error(`Run process exited with ${signal ?? `code ${code}`}.`);
     void recordProcessError(caseId, runId, settings, error);
   });
+  child.unref();
 }
 
 async function caseDetail(testCase) {
@@ -272,7 +279,7 @@ export async function handleRequest(request, response) {
     if (method === 'GET' && resource === 'runs' && tail) {
       const runId = decodeURIComponent(tail);
       if (!validRunId(runId)) return sendJson(response, 400, { error: 'Invalid run ID.' });
-      const run = await readRun(caseId, runId);
+      const run = await readRunStatus(caseId, runId);
       return run ? sendJson(response, 200, run) : sendJson(response, 404, { error: 'Run not found.' });
     }
 

@@ -22,7 +22,8 @@ function runDeterministic(path, runId, transcript, testCase, labels, outputToStd
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error('Deterministic grader timed out after 30 s.')),
       deterministicTimeoutMs);
-    worker.once('message', resolve);
+    // node --watch also posts 'watch:require' messages from workers. Skip them.
+    worker.on('message', message => { if (message?.status) resolve(message); });
     worker.once('error', reject);
     worker.once('exit', code => reject(new Error(`Grader exited with code ${code} before it returned scores.`)));
     worker.once('exit', () => clearTimeout(timeout));
@@ -60,7 +61,12 @@ export function createRun(caseId, runId = newRunId(), { model, thinking } = {}, 
     started_at: new Date().toISOString(),
     ended_at: null,
     agent: null,
-    agent_settings: { model: agent.model ?? agentDefault.model, effort: agent.effort ?? agentDefault.effort },
+    agent_settings: {
+      model: agent.model ?? agentDefault.model,
+      effort: agent.effort ?? agentDefault.effort,
+      ...(agent.architecture ? { architecture: agent.architecture } : {}),
+      ...(agent.agents && Object.keys(agent.agents).length ? { agents: agent.agents } : {}),
+    },
     transcript: null,
     judge,
     graders: Object.fromEntries(graderKinds.map(kind => [kind, {
@@ -89,26 +95,32 @@ export function failRun(run, error) {
   return run;
 }
 
+export async function gradeRun(testCase, run, dataDir) {
+  run.agent = run.transcript.agent ?? null;
+  await writeRun(run);
+  const labels = await readJson(join(dataDir, 'labels.json'));
+  await Promise.all(graderKinds.map(async kind => {
+    const dir = join(caseDir(testCase.id), kind);
+    const [deterministic, llm] = await Promise.all([
+      gradeDeterministic(join(dir, 'tests.js'), run.run_id, run.transcript, testCase, labels),
+      gradeRubric(join(dir, 'prompt.md'), testCase.input, run.transcript, run.judge),
+    ]);
+    run.graders[kind] = { deterministic, llm };
+  }));
+  run.score = scoreRun(run);
+  run.status = 'done';
+  run.ended_at = new Date().toISOString();
+}
+
 export async function runCase(testCase, runId, judge, agent) {
   const run = createRun(testCase.id, runId, judge, agent);
+  run.worker_pid = process.pid;
   await writeRun(run, { initial: true });
   try {
     validateAgent(run.agent_settings);
     const dataDir = await ensureData(testCase);
     run.transcript = await runAgent(testCase, dataDir, run.agent_settings);
-    run.agent = run.transcript.agent ?? null;
-    const labels = await readJson(join(dataDir, 'labels.json'));
-    await Promise.all(graderKinds.map(async kind => {
-      const dir = join(caseDir(testCase.id), kind);
-      const [deterministic, llm] = await Promise.all([
-        gradeDeterministic(join(dir, 'tests.js'), run.run_id, run.transcript, testCase, labels),
-        gradeRubric(join(dir, 'prompt.md'), testCase.input, run.transcript, run.judge),
-      ]);
-      run.graders[kind] = { deterministic, llm };
-    }));
-    run.score = scoreRun(run);
-    run.status = 'done';
-    run.ended_at = new Date().toISOString();
+    await gradeRun(testCase, run, dataDir);
   } catch (error) {
     failRun(run, error);
   }

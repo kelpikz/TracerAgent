@@ -114,14 +114,55 @@ export async function listRuns(id, limit = Infinity) {
   });
   const ids = files.filter(file => file.endsWith('.json') && validRunId(file.slice(0, -5)))
     .map(file => file.slice(0, -5)).sort().reverse().slice(0, limit);
-  const runs = await Promise.all(ids.map(runId => readRun(id, runId)));
-  return runs.filter(Boolean).map(({ run_id, status, started_at, ended_at, agent, score }) => (
-    { run_id, status, started_at, ended_at, agent, score_total: score?.total ?? null }
-  ));
+  const runs = await Promise.all(ids.map(runId => readRunStatus(id, runId)));
+  return runs.filter(Boolean).map(({ run_id, status, started_at, ended_at, agent, judge, score, transcript }) => ({
+    run_id, status, started_at, ended_at,
+    agent: agent && { name: agent.name, model: agent.model, effort: agent.effort },
+    judge_model: judge?.model ?? null,
+    steps: transcript?.steps?.length ?? null,
+    cost_usd: transcript?.usage?.cost_usd ?? null,
+    score_total: score?.total ?? null,
+  }));
 }
 
 export function readRun(id, runId) {
   return readJson(resultPath(id, runId));
+}
+
+async function workerIsGone(run, id) {
+  if (Number.isSafeInteger(run.worker_pid) && run.worker_pid > 0) {
+    try {
+      process.kill(run.worker_pid, 0);
+      return false;
+    } catch (error) {
+      if (error.code === 'ESRCH') return true;
+      if (error.code === 'EPERM') return false;
+      throw error;
+    }
+  }
+  // Older results lack a PID. Allow for the agent and the four sequential judge
+  // commands (auth check, model check, and up to two attempts) before expiring them.
+  const testCase = await readCase(id);
+  const judgeLimit = Number(process.env.EVAL_JUDGE_TIMEOUT_S || 600);
+  const seconds = (testCase?.timeout_s ?? 600) + 4 * (judgeLimit > 0 && Number.isFinite(judgeLimit) ? judgeLimit : 600) + 60;
+  return Date.now() - Date.parse(run.started_at) > seconds * 1000;
+}
+
+export async function readRunStatus(id, runId) {
+  const run = await readRun(id, runId);
+  if (run?.status !== 'running' || !await workerIsGone(run, id)) return run;
+  // Re-read after checking liveness: the worker may have saved its final result and exited.
+  const latest = await readRun(id, runId);
+  if (latest?.status !== 'running' || latest.worker_pid !== run.worker_pid) return latest;
+  const message = latest.transcript
+    ? 'The eval worker stopped before it finished grading.'
+    : 'The eval worker stopped before it saved an agent transcript.';
+  const graders = Object.fromEntries(Object.entries(latest.graders ?? {}).map(([kind, grades]) => [
+    kind, Object.fromEntries(Object.entries(grades).map(([method, grade]) => [
+      method, grade.status === 'pending' ? { ...grade, status: 'skipped', reason: message } : grade,
+    ])),
+  ]));
+  return { ...latest, status: 'interrupted', error: { message, stack: null }, graders };
 }
 
 export async function writeRun(run, { initial = false } = {}) {
