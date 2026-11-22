@@ -23,6 +23,7 @@ const transcript = await runIncident({
   effort: request.effort || process.env.EVAL_AGENT_EFFORT || 'high',
   now: request.now ?? undefined,
   architecture: request.architecture || process.env.AGENT_ARCH,
+  agents: request.agents ?? undefined,
   runId: process.env.AGENT_RUN_ID,
   log,
 });

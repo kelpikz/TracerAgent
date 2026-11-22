@@ -21,7 +21,8 @@ $env:EVAL_AGENT_CMD = "node agent/cli.js"; npm run eval -- run noise-price-impor
 
 | Environment variable | Use |
 | --- | --- |
-| `AGENT_ARCH` | Architecture name. Default: `single`. |
+| `AGENT_ARCH` | Architecture name: `single` (default) or `multi`. |
+| `AGENT_MULTI_CONFIG` | Path to a different `multi-agent.json`. |
 | `AGENT_RUN_ID` | Run store name in `.agent-runs/`. Use the same ID to continue a stopped run. |
 | `PI_AUTH_FILE` | Path to a different `auth.json`. |
 
@@ -39,6 +40,33 @@ The model and effort come from the eval request (`--agent-model`, `--agent-effor
 | `telemetry/store.js` | Loads one scenario folder. It never reads `labels.json`. |
 | `models.js` | pi-ai models with the `pi` CLI sign-in. |
 | `transcript.js` | Changes the durable conversation into the eval transcript. |
+
+## Architectures
+
+| Name | Agents |
+| --- | --- |
+| `single` | One agent with all tools. |
+| `multi` | An orchestrator LLM calls 5 agents as tools. Each call starts a new child conversation. |
+
+### `multi`
+
+| Agent | Tool for the orchestrator | Telemetry tools |
+| --- | --- | --- |
+| Orchestrator | — | `list_alerts`, `list_services` |
+| Observability | `ask_observability` | Metrics, logs, traces, business, `list_services`, `get_service_health`, `list_alerts` |
+| Dependency | `ask_dependency` | Changes, dependencies, `get_runbook`, `past_incidents`, `list_services`, `get_service_health` |
+| Reasoning | `ask_reasoning` | None |
+| Critic | `ask_critic` | None |
+| Reporting | `write_report` | None. Its report is the final answer and ends the run. |
+
+The orchestrator decides the order. Its prompt tells it to use the critic and to finish with `write_report`.
+Each agent sees only the text that the orchestrator sends.
+
+`architectures/multi-agent.json` sets `model` (`provider/model`), `effort`, and `maxTurns` for each agent.
+`null` uses the value from the eval request. `AGENT_MULTI_CONFIG` gives the path to a different file.
+
+In the transcript, the tool calls of a subagent come right after the `ask_*` call that started it.
+These steps have an `agent` field.
 
 ## Add an architecture
 

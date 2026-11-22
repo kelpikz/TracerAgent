@@ -1,0 +1,8 @@
+{
+  "orchestrator": { "model": null, "effort": null, "maxTurns": 30 },
+  "observability": { "model": null, "effort": null, "maxTurns": 25 },
+  "dependency": { "model": null, "effort": null, "maxTurns": 20 },
+  "reasoning": { "model": null, "effort": null },
+  "critic": { "model": null, "effort": null },
+  "reporting": { "model": null, "effort": null }
+}

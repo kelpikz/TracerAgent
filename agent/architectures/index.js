@@ -6,9 +6,10 @@
 //   agent({ store })       -> optional per-conversation choices (instructions, maxTurns, tools, ...)
 //   run(ctx)               -> optional. Replaces the default "submit the incident and wait" flow.
 //                             ctx: { harness, root, input, context }. Return the settled submission.
+import multi from './multi-agent.js';
 import single from './single-agent.js';
 
-export const architectures = { [single.name]: single };
+export const architectures = { [single.name]: single, [multi.name]: multi };
 
 export const DEFAULT_ARCHITECTURE = single.name;
 
