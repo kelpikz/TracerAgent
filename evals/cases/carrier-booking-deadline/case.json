@@ -1,0 +1,11 @@
+{
+  "id": "carrier-booking-deadline",
+  "title": "Shipment bookings wait after carrier calls time out",
+  "description": "Distinguish a Delivery client deadline from carrier maintenance, and verify that delayed bookings recovered.",
+  "scenario": "carrier-booking-deadline",
+  "incidents": ["carrier_booking_deadline"],
+  "noise": ["carrier_maintenance"],
+  "input": "ThirdPartyErrors [serious] at 2026-11-20 08:47 UTC\nthird_party_error_rate{provider=carrier} 100.0% > 5% for 5m\n\nCurrent time: 2026-11-20 12:00 UTC.\nWhat caused the page, what happened to customer orders, and is any action still needed?",
+  "tags": ["medium", "delivery", "third-party", "config-change", "recovery"],
+  "timeout_s": 600
+}

@@ -1,0 +1,11 @@
+{
+  "id": "catalog-list-sort-regression",
+  "title": "Product lists slow down after a Catalog rollout",
+  "description": "Trace sustained product list latency to the new sort on the read replica and check whether checkout is affected.",
+  "scenario": "catalog-list-sort-regression",
+  "incidents": ["catalog_list_sort_regression"],
+  "noise": ["catalog_gc", "price_scraper"],
+  "input": "ServiceLatencyHigh [warning] at 2026-11-20 11:22 UTC\nhttp_latency_p95_ms{service=gateway} 385.9ms > 2x normal for 10m\n\nCurrent time: 2026-11-20 12:00 UTC.\nWhich customer requests slowed down, what changed, and what should we do now?",
+  "tags": ["medium", "catalog", "postgres", "deploy", "latency"],
+  "timeout_s": 600
+}

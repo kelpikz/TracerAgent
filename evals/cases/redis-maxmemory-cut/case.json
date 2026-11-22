@@ -1,0 +1,25 @@
+{
+  "id": "redis-maxmemory-cut",
+  "title": "Add-to-cart fails after the cart Redis moves to a smaller instance",
+  "description": "Find why cart errors rise. A Redis resize 3 hours earlier set maxmemory to 640 MB with noeviction, and memory reached the limit.",
+  "scenario": "redis-maxmemory-cut",
+  "incidents": [
+    "redis_maxmemory_cut"
+  ],
+  "noise": [
+    "redis_keys_scan",
+    "newsletter_spike",
+    "price_scraper",
+    "catalog_gc",
+    "cron_jobs"
+  ],
+  "input": "ServiceErrorRateHigh [serious] at 2026-11-20 11:15 UTC\nhttp_error_rate{service=cart} 25.2% > 2% for 5m\n\nCurrent time: 2026-11-20 12:00 UTC.\nFind the cause, tell me the customer impact, and tell me what we should do now.",
+  "tags": [
+    "cart",
+    "redis",
+    "config-change",
+    "latent-cause",
+    "deploy-dead-end"
+  ],
+  "timeout_s": 600
+}

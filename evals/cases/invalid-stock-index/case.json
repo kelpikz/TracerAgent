@@ -1,0 +1,26 @@
+{
+  "id": "invalid-stock-index",
+  "title": "Checkout fails while a restock holds stock locks on an invalid index",
+  "description": "Find why checkout fails. The cause is an invalid stock index from a cron migration 5 hours before the page. A warehouse restock only exposes it.",
+  "scenario": "invalid-stock-index",
+  "incidents": [
+    "invalid_stock_index"
+  ],
+  "noise": [
+    "cron_jobs",
+    "newsletter_spike",
+    "catalog_gc",
+    "node3_report",
+    "dlq_deleted_users",
+    "price_scraper"
+  ],
+  "input": "CheckoutSuccessLow [critical] at 2026-11-20 11:31 UTC\ncheckout_success_rate 82.8% < 90% for 10m\n\nCurrent time: 2026-11-20 12:00 UTC.\nFind the cause, tell me the customer impact, and tell me what we should do now.",
+  "tags": [
+    "catalog",
+    "postgres",
+    "migration",
+    "lock-contention",
+    "latent-cause"
+  ],
+  "timeout_s": 900
+}

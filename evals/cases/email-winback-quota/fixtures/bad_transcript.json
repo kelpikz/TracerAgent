@@ -1,0 +1,492 @@
+{
+  "agent": {
+    "name": "fixture-bad",
+    "model": null
+  },
+  "input": "EmailsFailing [warning] at 2026-11-20 11:55 UTC\nemails_failed_per_min 1005 > 5 for 10m\n\nCurrent time: 2026-11-20 12:00 UTC.\nFind the cause, tell me the customer impact, and tell me what we should do now.",
+  "steps": [
+    {
+      "type": "tool_call",
+      "id": "t1",
+      "tool": "list_alerts",
+      "args": {
+        "state": "all",
+        "from": "2026-11-20T10:30:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "now": "2026-11-20T12:00:00.000Z",
+        "state": "all",
+        "matches": [
+          {
+            "name": "DlqGrowing",
+            "severity": "warning",
+            "fired_at": "2026-11-20T10:48:00.000Z",
+            "resolved_at": "2026-11-20T11:16:00.000Z",
+            "summary": "kafka_dlq_size{group=notification} grew in 15m"
+          },
+          {
+            "name": "ThirdPartyErrors",
+            "severity": "serious",
+            "fired_at": "2026-11-20T10:50:00.000Z",
+            "resolved_at": "2026-11-20T11:02:00.000Z",
+            "summary": "third_party_error_rate{provider=email} 63% > 5% for 5m"
+          },
+          {
+            "name": "EmailsFailing",
+            "severity": "warning",
+            "fired_at": "2026-11-20T10:55:00.000Z",
+            "resolved_at": "2026-11-20T11:02:00.000Z",
+            "summary": "emails_failed_per_min 1016 > 5 for 10m"
+          },
+          {
+            "name": "DlqGrowing",
+            "severity": "warning",
+            "fired_at": "2026-11-20T11:18:00.000Z",
+            "resolved_at": "2026-11-20T11:40:00.000Z",
+            "summary": "kafka_dlq_size{group=notification} grew in 15m"
+          },
+          {
+            "name": "ThirdPartyErrors",
+            "severity": "serious",
+            "fired_at": "2026-11-20T11:20:00.000Z",
+            "resolved_at": "2026-11-20T11:26:00.000Z",
+            "summary": "third_party_error_rate{provider=email} 63% > 5% for 5m"
+          },
+          {
+            "name": "EmailsFailing",
+            "severity": "warning",
+            "fired_at": "2026-11-20T11:25:00.000Z",
+            "resolved_at": "2026-11-20T11:26:00.000Z",
+            "summary": "emails_failed_per_min 818 > 5 for 10m"
+          },
+          {
+            "name": "ThirdPartyErrors",
+            "severity": "serious",
+            "fired_at": "2026-11-20T11:50:00.000Z",
+            "resolved_at": "2026-11-20T11:58:00.000Z",
+            "summary": "third_party_error_rate{provider=email} 63% > 5% for 5m"
+          },
+          {
+            "name": "DlqGrowing",
+            "severity": "warning",
+            "fired_at": "2026-11-20T11:51:00.000Z",
+            "resolved_at": null,
+            "summary": "kafka_dlq_size{group=notification} grew in 15m"
+          },
+          {
+            "name": "EmailsFailing",
+            "severity": "warning",
+            "fired_at": "2026-11-20T11:55:00.000Z",
+            "resolved_at": "2026-11-20T11:58:00.000Z",
+            "summary": "emails_failed_per_min 1028 > 5 for 10m"
+          }
+        ],
+        "rules": [
+          "CheckoutSuccessLow: checkout_success_rate < 90% for 10m [critical]",
+          "OrdersStuckPending: orders_stuck_pending_15m > 5 [critical]",
+          "PaymentSuccessLow: payment_success_rate < 90% for 10m [critical]",
+          "ServiceErrorRateHigh: http_error_rate > 2% for 5m (any service) [serious]",
+          "ServiceLatencyHigh: http_latency_p95_ms > 2x normal for 10m [warning]",
+          "PodRestarts: pod_restarts > 3 in 15m [serious]",
+          "PostgresDown: pg_up == 0 [critical]",
+          "PostgresConnectionsHigh: pg_connections_used > 80% of max [serious]",
+          "PostgresDiskHigh: pg_disk_used_pct > 80 [warning]",
+          "ReplicaLagHigh: pg_replication_lag_s > 30 for 5m [serious]",
+          "RedisMemoryHigh: redis_memory_used_mb > 85% of max [warning]",
+          "KafkaLagHigh: kafka_consumer_lag > 1000 for 10m [serious]",
+          "DlqGrowing: kafka_dlq_size grows in 15m [warning]",
+          "ThirdPartyErrors: third_party_error_rate > 5% for 5m [serious]",
+          "BadWebhookSignatures: webhook_bad_signatures_per_min > 10 [warning]",
+          "EmailsFailing: emails_failed_per_min > 5 for 10m [warning]",
+          "NodeDown: node_up == 0 [serious]"
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t2",
+      "tool": "query_metric",
+      "args": {
+        "name": "third_party_error_rate",
+        "labels": {
+          "provider": "email"
+        },
+        "from": "2026-11-20T10:30:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "name": "third_party_error_rate",
+        "labels": {
+          "provider": "email"
+        },
+        "unit": "%",
+        "last": 0,
+        "min": 0,
+        "max": 65.4,
+        "max_at": "2026-11-20T11:52:00.000Z",
+        "avg": 27.58,
+        "normal": 0,
+        "step_s": 120,
+        "points": [
+          {
+            "at": "2026-11-20T10:30:00.000Z",
+            "value": 1.79
+          },
+          {
+            "at": "2026-11-20T10:32:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T10:34:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T10:36:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T10:38:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T10:40:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T10:42:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T10:44:00.000Z",
+            "value": 62.33
+          },
+          {
+            "at": "2026-11-20T10:46:00.000Z",
+            "value": 63.63
+          },
+          {
+            "at": "2026-11-20T10:48:00.000Z",
+            "value": 62.85
+          },
+          {
+            "at": "2026-11-20T10:50:00.000Z",
+            "value": 63.4
+          },
+          {
+            "at": "2026-11-20T10:52:00.000Z",
+            "value": 63.63
+          },
+          {
+            "at": "2026-11-20T10:54:00.000Z",
+            "value": 64.09
+          },
+          {
+            "at": "2026-11-20T10:56:00.000Z",
+            "value": 64.71
+          },
+          {
+            "at": "2026-11-20T10:58:00.000Z",
+            "value": 64.09
+          },
+          {
+            "at": "2026-11-20T11:00:00.000Z",
+            "value": 61.83
+          },
+          {
+            "at": "2026-11-20T11:02:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T11:04:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T11:06:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T11:08:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T11:10:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T11:12:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T11:14:00.000Z",
+            "value": 62.03
+          },
+          {
+            "at": "2026-11-20T11:16:00.000Z",
+            "value": 62.72
+          },
+          {
+            "at": "2026-11-20T11:18:00.000Z",
+            "value": 65.18
+          },
+          {
+            "at": "2026-11-20T11:20:00.000Z",
+            "value": 65.1
+          },
+          {
+            "at": "2026-11-20T11:22:00.000Z",
+            "value": 63.48
+          },
+          {
+            "at": "2026-11-20T11:24:00.000Z",
+            "value": 58.47
+          },
+          {
+            "at": "2026-11-20T11:26:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T11:28:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T11:30:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T11:32:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T11:34:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T11:36:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T11:38:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T11:40:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T11:42:00.000Z",
+            "value": 0
+          },
+          {
+            "at": "2026-11-20T11:44:00.000Z",
+            "value": 61.49
+          },
+          {
+            "at": "2026-11-20T11:46:00.000Z",
+            "value": 63.43
+          },
+          {
+            "at": "2026-11-20T11:48:00.000Z",
+            "value": 64.49
+          },
+          {
+            "at": "2026-11-20T11:50:00.000Z",
+            "value": 63.43
+          },
+          {
+            "at": "2026-11-20T11:52:00.000Z",
+            "value": 65.4
+          },
+          {
+            "at": "2026-11-20T11:54:00.000Z",
+            "value": 63.15
+          },
+          {
+            "at": "2026-11-20T11:56:00.000Z",
+            "value": 52.42
+          },
+          {
+            "at": "2026-11-20T11:58:00.000Z",
+            "value": 0
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t3",
+      "tool": "search_logs",
+      "args": {
+        "service": "notification",
+        "level": "error",
+        "from": "2026-11-20T11:30:00Z",
+        "to": "2026-11-20T12:00:00Z",
+        "limit": 5
+      },
+      "result": {
+        "count": 141,
+        "shown": 5,
+        "samples": [
+          {
+            "ts": "2026-11-20T11:48:01.599Z",
+            "service": "notification",
+            "level": "error",
+            "msg": "email failed 3 times, message moved to DLQ",
+            "template": "order_shipped",
+            "order_id": "ord_UYTRRR",
+            "error": "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main",
+            "group": "notification",
+            "topic": "delivery.updated"
+          },
+          {
+            "ts": "2026-11-20T11:48:03.558Z",
+            "service": "notification",
+            "level": "error",
+            "msg": "email failed 3 times, message moved to DLQ",
+            "template": "order_confirmed",
+            "order_id": "ord_PW7FXS",
+            "error": "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main",
+            "group": "notification",
+            "topic": "order.paid"
+          },
+          {
+            "ts": "2026-11-20T11:48:12.841Z",
+            "service": "notification",
+            "level": "error",
+            "msg": "email failed 3 times, message moved to DLQ",
+            "template": "order_delivered",
+            "order_id": "ord_N7ATJ5",
+            "error": "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main",
+            "group": "notification",
+            "topic": "delivery.updated"
+          },
+          {
+            "ts": "2026-11-20T11:48:14.551Z",
+            "service": "notification",
+            "level": "error",
+            "msg": "email failed 3 times, message moved to DLQ",
+            "template": "order_confirmed",
+            "order_id": "ord_KKDP5S",
+            "error": "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main",
+            "group": "notification",
+            "topic": "order.paid"
+          },
+          {
+            "ts": "2026-11-20T11:48:22.978Z",
+            "service": "notification",
+            "level": "error",
+            "msg": "email failed 3 times, message moved to DLQ",
+            "template": "order_delivered",
+            "order_id": "ord_ZV7DFR",
+            "error": "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main",
+            "group": "notification",
+            "topic": "delivery.updated"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t4",
+      "tool": "kafka_lag",
+      "args": {
+        "group": "notification",
+        "from": "2026-11-20T10:30:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "window": {
+          "from": "2026-11-20T10:30:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "groups": [
+          {
+            "group": "notification",
+            "reads": [
+              "order.created",
+              "order.paid",
+              "delivery.updated"
+            ],
+            "consumer_lag": {
+              "unit": "count",
+              "last": 1,
+              "min": 0,
+              "max": 104,
+              "max_at": "2026-11-20T11:22:00.000Z",
+              "avg": 36.89,
+              "normal": 2
+            },
+            "dlq_size": {
+              "unit": "count",
+              "last": 424,
+              "min": 6,
+              "max": 424,
+              "max_at": "2026-11-20T11:57:00.000Z",
+              "avg": 191,
+              "normal": 4
+            }
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t5",
+      "tool": "dlq_sample",
+      "args": {
+        "group": "notification",
+        "from": "2026-11-20T10:30:00Z",
+        "to": "2026-11-20T12:00:00Z",
+        "limit": 3
+      },
+      "result": {
+        "count": 420,
+        "by_error": {
+          "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main": 419,
+          "550 recipient address rejected: mailbox does not exist": 1
+        },
+        "samples": [
+          {
+            "ts": "2026-11-20T11:57:38.419Z",
+            "service": "notification",
+            "level": "error",
+            "msg": "email failed 3 times, message moved to DLQ",
+            "template": "order_confirmed",
+            "order_id": "ord_2JRVAB",
+            "error": "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main",
+            "group": "notification",
+            "topic": "order.paid"
+          },
+          {
+            "ts": "2026-11-20T11:57:40.914Z",
+            "service": "notification",
+            "level": "error",
+            "msg": "email failed 3 times, message moved to DLQ",
+            "template": "order_delivered",
+            "order_id": "ord_4PDBBJ",
+            "error": "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main",
+            "group": "notification",
+            "topic": "delivery.updated"
+          },
+          {
+            "ts": "2026-11-20T11:57:56.130Z",
+            "service": "notification",
+            "level": "error",
+            "msg": "email failed 3 times, message moved to DLQ",
+            "template": "order_delivered",
+            "order_id": "ord_TVWMPP",
+            "error": "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main",
+            "group": "notification",
+            "topic": "delivery.updated"
+          }
+        ]
+      },
+      "error": null
+    }
+  ],
+  "final_output": "## Root cause\nThe email provider is the problem. It returns \"429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main\" to Notification. The provider has an outage or a quota problem on its side. Emails fail in short bursts, and the provider limit is hit again and again.\n\n## Evidence\n- The email error rate (third_party_error_rate, provider=email) is high in bursts: EmailsFailing fired at 10:55, 11:25 and 11:55, and ThirdPartyErrors for email fired in the same time.\n- Notification logs \"email failed 3 times, message moved to DLQ\" with the 429 error. The error is the same for all the messages.\n- dlq_sample shows 419 messages with 429 in 10:30 to 12:00. The DLQ size grows to 424 at 11:57.\n\n## Customer impact\nSome order emails fail and 419 messages are in the notification DLQ. Customers do not get these emails. I did not check checkout or orders.\n\n## Next steps\n1. Contact the email provider and ask them to fix the problem or raise the limit for our key.\n2. Replay the DLQ messages when the provider works again.\n3. Watch emails_failed_per_min.\n"
+}

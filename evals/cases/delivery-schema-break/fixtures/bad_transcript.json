@@ -1,0 +1,247 @@
+{
+  "agent": {
+    "name": "fixture-bad",
+    "model": null
+  },
+  "input": "KafkaLagHigh [serious] at 2026-11-20 11:33 UTC\nkafka_consumer_lag{group=delivery} 1276 > 1000 for 10m\n\nCurrent time: 2026-11-20 12:00 UTC.\nFind the cause, tell me the customer impact, and tell me what we should do now.",
+  "steps": [
+    {
+      "type": "tool_call",
+      "id": "t1",
+      "tool": "list_alerts",
+      "args": {
+        "state": "firing"
+      },
+      "result": {
+        "now": "2026-11-20T12:00:00.000Z",
+        "state": "firing",
+        "matches": [
+          {
+            "name": "KafkaLagHigh",
+            "severity": "serious",
+            "fired_at": "2026-11-20T11:33:00.000Z",
+            "resolved_at": null,
+            "summary": "kafka_consumer_lag{group=delivery} 1276 > 1000 for 10m"
+          },
+          {
+            "name": "DlqGrowing",
+            "severity": "warning",
+            "fired_at": "2026-11-20T11:51:00.000Z",
+            "resolved_at": null,
+            "summary": "kafka_dlq_size{group=notification} grew in 15m"
+          }
+        ],
+        "rules": [
+          "CheckoutSuccessLow: checkout_success_rate < 90% for 10m [critical]",
+          "OrdersStuckPending: orders_stuck_pending_15m > 5 [critical]",
+          "PaymentSuccessLow: payment_success_rate < 90% for 10m [critical]",
+          "ServiceErrorRateHigh: http_error_rate > 2% for 5m (any service) [serious]",
+          "ServiceLatencyHigh: http_latency_p95_ms > 2x normal for 10m [warning]",
+          "PodRestarts: pod_restarts > 3 in 15m [serious]",
+          "PostgresDown: pg_up == 0 [critical]",
+          "PostgresConnectionsHigh: pg_connections_used > 80% of max [serious]",
+          "PostgresDiskHigh: pg_disk_used_pct > 80 [warning]",
+          "ReplicaLagHigh: pg_replication_lag_s > 30 for 5m [serious]",
+          "RedisMemoryHigh: redis_memory_used_mb > 85% of max [warning]",
+          "KafkaLagHigh: kafka_consumer_lag > 1000 for 10m [serious]",
+          "DlqGrowing: kafka_dlq_size grows in 15m [warning]",
+          "ThirdPartyErrors: third_party_error_rate > 5% for 5m [serious]",
+          "BadWebhookSignatures: webhook_bad_signatures_per_min > 10 [warning]",
+          "EmailsFailing: emails_failed_per_min > 5 for 10m [warning]",
+          "NodeDown: node_up == 0 [serious]"
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t2",
+      "tool": "kafka_lag",
+      "args": {
+        "group": "delivery"
+      },
+      "result": {
+        "window": {
+          "from": "2026-11-20T11:00:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "groups": [
+          {
+            "group": "delivery",
+            "reads": [
+              "order.paid"
+            ],
+            "consumer_lag": {
+              "unit": "count",
+              "last": 2045,
+              "min": 323,
+              "max": 2045,
+              "max_at": "2026-11-20T11:59:00.000Z",
+              "avg": 1196.57,
+              "normal": 1
+            },
+            "dlq_size": {
+              "unit": "count",
+              "last": 0,
+              "min": 0,
+              "max": 0,
+              "max_at": "2026-11-20T11:00:00.000Z",
+              "avg": 0,
+              "normal": 0
+            }
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t3",
+      "tool": "search_logs",
+      "args": {
+        "service": "delivery",
+        "level": "error",
+        "limit": 3
+      },
+      "result": {
+        "count": 60,
+        "shown": 3,
+        "samples": [
+          {
+            "ts": "2026-11-20T11:00:22.605Z",
+            "service": "delivery",
+            "level": "error",
+            "msg": "failed to process message, will retry",
+            "group": "delivery",
+            "topic": "order.paid",
+            "offset": 1854162,
+            "order_id": "ord_V6WMXG",
+            "schema_version": 2,
+            "attempt": 18,
+            "error": "json: cannot unmarshal object into Go struct field OrderPaid.shipping_address of type string"
+          },
+          {
+            "ts": "2026-11-20T11:01:22.653Z",
+            "service": "delivery",
+            "level": "error",
+            "msg": "failed to process message, will retry",
+            "group": "delivery",
+            "topic": "order.paid",
+            "offset": 1854162,
+            "order_id": "ord_V6WMXG",
+            "schema_version": 2,
+            "attempt": 19,
+            "error": "json: cannot unmarshal object into Go struct field OrderPaid.shipping_address of type string"
+          },
+          {
+            "ts": "2026-11-20T11:02:22.671Z",
+            "service": "delivery",
+            "level": "error",
+            "msg": "failed to process message, will retry",
+            "group": "delivery",
+            "topic": "order.paid",
+            "offset": 1854162,
+            "order_id": "ord_V6WMXG",
+            "schema_version": 2,
+            "attempt": 20,
+            "error": "json: cannot unmarshal object into Go struct field OrderPaid.shipping_address of type string"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t4",
+      "tool": "get_service_health",
+      "args": {
+        "service": "delivery"
+      },
+      "result": {
+        "service": "delivery",
+        "window": {
+          "from": "2026-11-20T11:00:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "healthy": true,
+        "problems": [],
+        "signals": {
+          "http_requests_per_second": {
+            "unit": "req/s",
+            "last": 1.89,
+            "min": 1.69,
+            "max": 2.28,
+            "max_at": "2026-11-20T11:39:00.000Z",
+            "avg": 2.01,
+            "normal": 1.63
+          },
+          "http_error_rate": {
+            "unit": "%",
+            "last": 0,
+            "min": 0,
+            "max": 1.65,
+            "max_at": "2026-11-20T11:52:00.000Z",
+            "avg": 0.15,
+            "normal": 0
+          },
+          "http_latency_p95_ms": {
+            "unit": "ms",
+            "last": 101,
+            "min": 92.2,
+            "max": 116.7,
+            "max_at": "2026-11-20T11:26:00.000Z",
+            "avg": 105.02,
+            "normal": 98.9
+          },
+          "http_latency_p99_ms": {
+            "unit": "ms",
+            "last": 201.7,
+            "min": 160,
+            "max": 233.9,
+            "max_at": "2026-11-20T11:43:00.000Z",
+            "avg": 193.5,
+            "normal": 183.3
+          },
+          "cpu_pct": {
+            "unit": "%",
+            "last": 12.96,
+            "min": 12.19,
+            "max": 16.3,
+            "max_at": "2026-11-20T11:20:00.000Z",
+            "avg": 14.49,
+            "normal": 11.7
+          },
+          "memory_mb": {
+            "unit": "MB",
+            "last": 202.2,
+            "min": 193.8,
+            "max": 223.9,
+            "max_at": "2026-11-20T11:01:00.000Z",
+            "avg": 200.5,
+            "normal": 209.4
+          },
+          "pod_restarts": {
+            "unit": "count",
+            "last": 0,
+            "min": 0,
+            "max": 0,
+            "max_at": "2026-11-20T11:00:00.000Z",
+            "avg": 0,
+            "normal": 0
+          },
+          "pods_ready": {
+            "unit": "count",
+            "last": 2,
+            "min": 2,
+            "max": 2,
+            "max_at": "2026-11-20T11:00:00.000Z",
+            "avg": 2,
+            "normal": 2
+          }
+        }
+      },
+      "error": null
+    }
+  ],
+  "final_output": "## Root cause\nThe Delivery consumer is stuck on one bad message. It fails on offset 1854162 and retries it again and again, so it does not read the next messages. I did not find out why the message is bad.\n\n## Evidence\n- kafka_lag for group delivery (11:00 to 12:00): the lag is 2045 at 11:59. It was 323 at 11:00 and it keeps growing.\n- search_logs for delivery errors: \"failed to process message, will retry\" for offset 1854162 and order ord_V6WMXG, with a growing attempt count.\n- get_service_health for delivery: the pods are ready and CPU is normal, so the service looks healthy.\n\n## Customer impact\nA backlog of about 2,000 messages waits in the topic. The lag keeps growing, so shipment updates are late for many orders.\n\n## Next steps\nRestart the Delivery consumer. If it stays stuck, skip the bad message and move the offset past it, so that the backlog can drain."
+}

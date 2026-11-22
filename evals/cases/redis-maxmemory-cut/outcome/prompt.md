@@ -1,0 +1,35 @@
+# Grade the final answer
+
+The page is ServiceErrorRateHigh for cart at 11:15 UTC. The current time is 12:00 UTC.
+
+**Expected facts.**
+- Root cause: at 08:20 UTC infra moved the cart Redis to a smaller instance (config change "Move cart Redis to a smaller instance to cut cost", FIN-212). The new instance has `maxmemory` 640 MB with `maxmemory-policy noeviction` (cart pod log "redis connected", `host=cart-redis-1g`). The old host was `cart-redis-2g` (the "connection lost" log shows it). The trigger is the move and the small limit. The old limit of 2048 MB is not shown by any tool: an answer may state it, but do not require it. Accept "resize", "downsize", "smaller or cheaper instance", or "maxmemory cut" for the trigger. Do not require the ticket number FIN-212.
+- Mechanism: Redis memory grows with traffic (the metric climbs from 08:20 to 11:10; that cart keys live for days is not shown by any tool, so it is optional). With `noeviction`, Redis does not remove keys. Memory reached about 640 MB at 11:10 UTC (the first write error is at 11:10:02; the alert fires at 11:15 because the rule needs 5 minutes). From then, Redis rejects writes with "OOM command not allowed when used memory > 'maxmemory'". `POST /cart/items` fails with HTTP 500 (the failed trace span `redis HSET cart` has the OOM error). Reads and deletes still work. Redis latency is normal. `RedisMemoryHigh` does not fire. The answer should say why the false leads are not the cause. The cart `v2.1.0` deploy at 09:40 ("Upgrade Redis client library") comes 90 minutes before the errors, and the cart error rate stays near 0 after it. The error comes from the Redis server, not from the client. The newsletter spike (10:00 to 10:30) ends before the errors and has no errors. The midnight `KEYS` job only adds 2 minutes of latency with no errors.
+- Impact, as the tools show it. From 11:10 UTC, about 19,000 add-to-cart requests fail by 12:00 (accept 15,000 to 23,000; `cart_errors_per_min` is 385 to 466 per minute from 11:20, average about 408, and 382 at 11:59; the average is about 320 only when the window is 11:00 to 12:00). The cart error rate is 25.2% at 11:15 and about 37% to 39% at the end. Customers can see and empty their cart, but they cannot add items. Fewer checkouts start: checkout attempts fall from about 28 to 30 per minute before 11:10 (the 10:30 to 11:10 average is 28) to about 19 per minute after it (about -33%, and about 450 to 570 fewer in 50 minutes; the size depends on the baseline window, so accept a range). Checkout and payment success rates stay normal (about 97%). The gateway error rate rises with the cart errors (4.6% at 11:15).
+- State: the fault is still active at 12:00. Redis memory is flat at the limit and cart errors continue. An answer that says "the problem has cleared" is wrong.
+- Correct actions: now, raise the Redis `maxmemory` back to 2048 MB, or move the cart Redis back to the larger instance (`cart-redis-2g`). Do not require the number 2048 MB or an exact new limit: the data shows only the old host name. Then check that the cart error rate and `cart_errors_per_min` go back to 0 and that add to cart works. Good extra actions: set a TTL or an eviction policy for cart keys, and make `RedisMemoryHigh` use the real `maxmemory` of the instance. Wrong actions: roll back the cart `v2.1.0` deploy as the fix, restart the cart pods as the fix, add more cart pods, or flush Redis (this removes all carts).
+
+Give a short reason for each score. An empty answer gets 0 for each item. Use only the answer and the transcript as evidence for the claims. A claim that no tool result in the transcript supports (a guess, or a fact from the case text only) gets a low score: root_cause and evidence get 0 for a trigger or a limit that no tool result shows, and 0.5 at most when only the change title is shown without the log or memory evidence. Optional facts (the old 2048 MB limit, long-lived cart keys) are neither required nor rewarded when unsupported.
+
+1. **root_cause**
+   An answer that says only "Redis is full at 640 MB, raise the limit", with no 08:20 move to the smaller instance, gets at most 0.5. The trigger is the point of this case.
+   - 1. The answer names the Redis memory limit (640 MB, `noeviction`) on the smaller instance as the fault, and names the 08:20 move as the trigger. The transcript supports both.
+   - 0.5. The answer names the right area (Redis is full and rejects cart writes) but not the move to the smaller instance or the 640 MB limit.
+   - 0. The cause is wrong (for example the cart `v2.1.0` deploy, the newsletter traffic, or the `KEYS` job), missing, or only a guess.
+2. **mechanism**
+   An answer with no trigger (no move to the smaller instance) gets at most 0.5, because it cannot explain why memory reached the limit now.
+   - 1. The answer explains the steps: the smaller instance with `noeviction`, memory that grows with traffic until it reaches the limit at about 11:10, Redis that rejects writes with the OOM error, and `POST /cart/items` that returns 500. It also says why the cart deploy and the other false leads are not the cause.
+   - 0.5. The mechanism is partly correct (for example the OOM error and the failing route), or the false leads are not addressed.
+   - 0. No mechanism, or a wrong one (for example "the new Redis client library breaks writes").
+3. **impact**
+   - 1. The answer gives the impact close to the data: add to cart fails from about 11:10, the size (about 19,000 failed requests, or a cart error rate of about 25% to 39%), and the lower checkout attempts. It also says what still works (reading and removing items, checkout and payment for existing carts) and that the fault is still active.
+   - 0.5. The impact is in the right direction (add to cart fails), but it has no size or start time, or no mention of what still works or of the checkout drop, or it has a wrong part.
+   - 0. No impact, or a wrong impact (for example "checkout and payment fail").
+4. **next_steps**
+   - 1. The first action raises `maxmemory` (back to the old size, 2048 MB if the answer knows it, or clearly higher) or moves the cart Redis back to the larger instance ("roll back the Redis resize", "put the 2 GB node back"), and then checks that cart writes and the error rate recover. It does not suggest a rollback of the cart deploy, and no harmful action.
+   - 0.5. The action is reasonable but generic or incomplete (for example "add more Redis memory" with no check of recovery, or an eviction policy only as a later action), or it also includes an unrelated action next to the right one.
+   - 0. No action, or an action that does not match the cause (for example a rollback of cart `v2.1.0` as the fix, or a Redis flush).
+5. **evidence**
+   - 1. Each main claim cites a tool result: the 08:20 change, the `maxmemory_mb=640` log, the OOM error and its time, the flat Redis memory, the failing route, and the error rate or checkout numbers.
+   - 0.5. Some claims have no evidence.
+   - 0. The answer has no evidence, or it states facts that the transcript does not show.

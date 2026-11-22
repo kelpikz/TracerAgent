@@ -1,0 +1,25 @@
+{
+  "id": "email-winback-quota",
+  "title": "Order emails fail while a marketing job uses the email rate limit",
+  "description": "Find why emails fail in bursts. A new win-back email job shares the API key with order emails and the provider returns 429.",
+  "scenario": "email-winback-quota",
+  "incidents": [
+    "winback_email_quota"
+  ],
+  "noise": [
+    "dlq_deleted_users",
+    "notification_oom",
+    "newsletter_spike",
+    "cron_jobs",
+    "price_scraper"
+  ],
+  "input": "EmailsFailing [warning] at 2026-11-20 11:55 UTC\nemails_failed_per_min 1028 > 5 for 10m\n\nCurrent time: 2026-11-20 12:00 UTC.\nFind the cause, tell me the customer impact, and tell me what we should do now.",
+  "tags": [
+    "notification",
+    "email",
+    "rate-limit",
+    "third-party",
+    "scheduled-job"
+  ],
+  "timeout_s": 600
+}

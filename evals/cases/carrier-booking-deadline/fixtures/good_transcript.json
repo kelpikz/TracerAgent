@@ -1,0 +1,674 @@
+{
+  "steps": [
+    {
+      "type": "tool_call",
+      "tool": "third_party_health",
+      "args": {
+        "provider": "carrier",
+        "from": "2026-11-20T08:42:00Z",
+        "to": "2026-11-20T09:09:00Z"
+      },
+      "result": {
+        "provider": "carrier",
+        "window": {
+          "from": "2026-11-20T08:42:00.000Z",
+          "to": "2026-11-20T09:09:00.000Z"
+        },
+        "metrics": {
+          "third_party_requests_per_min": {
+            "unit": "count",
+            "last": 21,
+            "min": 15,
+            "max": 38,
+            "max_at": "2026-11-20T08:47:00.000Z",
+            "avg": 22.43,
+            "normal": 26
+          },
+          "third_party_error_rate": {
+            "unit": "%",
+            "last": 100,
+            "min": 57.9,
+            "max": 100,
+            "max_at": "2026-11-20T08:43:00.000Z",
+            "avg": 88.87,
+            "normal": 0
+          },
+          "third_party_latency_p95_ms": {
+            "unit": "ms",
+            "last": 450,
+            "min": 450,
+            "max": 729.4,
+            "max_at": "2026-11-20T08:44:00.000Z",
+            "avg": 539.58,
+            "normal": 668.7
+          },
+          "webhooks_received_per_min": {
+            "unit": "count",
+            "last": 4,
+            "min": 1,
+            "max": 8,
+            "max_at": "2026-11-20T08:59:00.000Z",
+            "avg": 3.93,
+            "normal": 5
+          },
+          "webhook_bad_signatures_per_min": {
+            "unit": "count",
+            "last": 0,
+            "min": 0,
+            "max": 0,
+            "max_at": "2026-11-20T08:42:00.000Z",
+            "avg": 0,
+            "normal": 0
+          }
+        },
+        "error_log_count": 3,
+        "error_log_samples": [
+          {
+            "ts": "2026-11-20T08:42:17.770Z",
+            "service": "delivery",
+            "level": "warn",
+            "msg": "carrier booking timed out, retry queued",
+            "trace_id": "739bba8ae0dacf84237c55fa655d5891",
+            "span_id": "0e6792f0aa19ae48",
+            "target": "carrier",
+            "order_id": "ord_N4VMCY",
+            "deadline_ms": 450,
+            "response_received": false
+          },
+          {
+            "ts": "2026-11-20T08:49:34.816Z",
+            "service": "delivery",
+            "level": "warn",
+            "msg": "carrier booking timed out, retry queued",
+            "trace_id": "c5763484f16ef2ed7f9055dda9575c9e",
+            "span_id": "809bc8200ae1d6c1",
+            "target": "carrier",
+            "order_id": "ord_K22YAG",
+            "deadline_ms": 450,
+            "response_received": false
+          },
+          {
+            "ts": "2026-11-20T09:06:29.225Z",
+            "service": "delivery",
+            "level": "warn",
+            "msg": "carrier booking timed out, retry queued",
+            "trace_id": "16c8ca5badff6abc0fc0518d8f046d27",
+            "span_id": "dd4b2159fe291b2a",
+            "target": "carrier",
+            "order_id": "ord_7Q4LYT",
+            "deadline_ms": 450,
+            "response_received": false
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "search_logs",
+      "args": {
+        "service": "delivery",
+        "text": "scheduled maintenance",
+        "limit": 1,
+        "from": "2026-11-20T01:00:00Z",
+        "to": "2026-11-20T01:15:00Z"
+      },
+      "result": {
+        "count": 58,
+        "shown": 1,
+        "samples": [
+          {
+            "ts": "2026-11-20T01:00:02.036Z",
+            "service": "delivery",
+            "level": "warn",
+            "msg": "carrier error, will retry in 5 min",
+            "order_id": "ord_REDVXS",
+            "error": "503 Service Unavailable: scheduled maintenance"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "get_trace",
+      "args": {
+        "trace_id": "739bba8ae0dacf84237c55fa655d5891"
+      },
+      "result": {
+        "trace_id": "739bba8ae0dacf84237c55fa655d5891",
+        "root": "POST /webhooks/stripe",
+        "start": "2026-11-20T08:42:16.261Z",
+        "status": "error",
+        "http_status": 200,
+        "total_ms": 1579.31,
+        "spans": [
+          {
+            "id": "ba37d1877b9b9b37",
+            "parent": null,
+            "service": "gateway",
+            "name": "POST /webhooks/stripe",
+            "kind": "server",
+            "offset_ms": 0,
+            "duration_ms": 12.96,
+            "status": "ok",
+            "attrs": {
+              "http_status": 200
+            }
+          },
+          {
+            "id": "0c4ad1a72fce16e7",
+            "parent": "ba37d1877b9b9b37",
+            "service": "payment",
+            "name": "POST /webhooks/stripe",
+            "kind": "server",
+            "offset_ms": 1.34,
+            "duration_ms": 10.76,
+            "status": "ok",
+            "attrs": {
+              "http_status": 200,
+              "event_type": "payment_intent.succeeded",
+              "payment_id": "pay_edbe6fdb74",
+              "order_id": "ord_N4VMCY"
+            }
+          },
+          {
+            "id": "c8f7b060327c5822",
+            "parent": "0c4ad1a72fce16e7",
+            "service": "payment",
+            "name": "verify signature",
+            "kind": "internal",
+            "offset_ms": 2.19,
+            "duration_ms": 0.24,
+            "status": "ok",
+            "attrs": {}
+          },
+          {
+            "id": "30142ee365b521b8",
+            "parent": "0c4ad1a72fce16e7",
+            "service": "payment",
+            "name": "pg UPDATE payments",
+            "kind": "client",
+            "offset_ms": 2.97,
+            "duration_ms": 5.28,
+            "status": "ok",
+            "attrs": {
+              "db": "payments"
+            }
+          },
+          {
+            "id": "1a744bb4178e03ed",
+            "parent": "0c4ad1a72fce16e7",
+            "service": "payment",
+            "name": "pg INSERT outbox",
+            "kind": "client",
+            "offset_ms": 8.73,
+            "duration_ms": 2.45,
+            "status": "ok",
+            "attrs": {
+              "db": "payments"
+            }
+          },
+          {
+            "id": "13960fb1ba4da1fb",
+            "parent": "0c4ad1a72fce16e7",
+            "service": "payment",
+            "name": "kafka publish payment.succeeded",
+            "kind": "producer",
+            "offset_ms": 548.83,
+            "duration_ms": 2.74,
+            "status": "ok",
+            "attrs": {
+              "topic": "payment.succeeded"
+            }
+          },
+          {
+            "id": "2e542299b71c0ac2",
+            "parent": "13960fb1ba4da1fb",
+            "service": "order",
+            "name": "kafka consume payment.succeeded",
+            "kind": "consumer",
+            "offset_ms": 762.42,
+            "duration_ms": 8.25,
+            "status": "ok",
+            "attrs": {
+              "topic": "payment.succeeded"
+            }
+          },
+          {
+            "id": "396fd2985b2e7f8d",
+            "parent": "2e542299b71c0ac2",
+            "service": "order",
+            "name": "pg UPDATE orders + INSERT outbox",
+            "kind": "client",
+            "offset_ms": 763.04,
+            "duration_ms": 6.23,
+            "status": "ok",
+            "attrs": {
+              "db": "orders"
+            }
+          },
+          {
+            "id": "7ce09d349fb88b4d",
+            "parent": "2e542299b71c0ac2",
+            "service": "order",
+            "name": "kafka publish order.paid",
+            "kind": "producer",
+            "offset_ms": 970.13,
+            "duration_ms": 3.53,
+            "status": "ok",
+            "attrs": {
+              "topic": "order.paid"
+            }
+          },
+          {
+            "id": "3af629ef2af689ad",
+            "parent": "7ce09d349fb88b4d",
+            "service": "notification",
+            "name": "kafka consume order.paid",
+            "kind": "consumer",
+            "offset_ms": 1301.46,
+            "duration_ms": 277.85,
+            "status": "ok",
+            "attrs": {
+              "topic": "order.paid"
+            }
+          },
+          {
+            "id": "04a97c08dbee7be4",
+            "parent": "3af629ef2af689ad",
+            "service": "notification",
+            "name": "email POST /v3/mail/send",
+            "kind": "client",
+            "offset_ms": 1301.89,
+            "duration_ms": 275.28,
+            "status": "ok",
+            "attrs": {
+              "peer": "email",
+              "template": "order_confirmed"
+            }
+          },
+          {
+            "id": "0e6792f0aa19ae48",
+            "parent": "7ce09d349fb88b4d",
+            "service": "delivery",
+            "name": "kafka consume order.paid",
+            "kind": "consumer",
+            "offset_ms": 1053.66,
+            "duration_ms": 455.4,
+            "status": "ok",
+            "attrs": {
+              "topic": "order.paid"
+            }
+          },
+          {
+            "id": "b4b6ed8cff046517",
+            "parent": "0e6792f0aa19ae48",
+            "service": "delivery",
+            "name": "carrier POST /shipments",
+            "kind": "client",
+            "offset_ms": 1054.57,
+            "duration_ms": 450,
+            "status": "error",
+            "attrs": {
+              "peer": "carrier",
+              "error": "client context deadline exceeded"
+            }
+          },
+          {
+            "id": "d97d2b6f577f6583",
+            "parent": "0e6792f0aa19ae48",
+            "service": "delivery",
+            "name": "pg INSERT booking retry",
+            "kind": "client",
+            "offset_ms": 1505.25,
+            "duration_ms": 2.17,
+            "status": "ok",
+            "attrs": {
+              "db": "shipments"
+            }
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "log_patterns",
+      "args": {
+        "service": "delivery",
+        "from": "2026-11-20T08:41:00Z",
+        "to": "2026-11-20T09:24:00Z",
+        "limit": 8
+      },
+      "result": {
+        "window": {
+          "from": "2026-11-20T08:41:00.000Z",
+          "to": "2026-11-20T09:24:00.000Z"
+        },
+        "patterns": [
+          {
+            "pattern": "delivery info: carrier booking retry queue depth",
+            "count": 7,
+            "previous_window": 0,
+            "new": true,
+            "example": {
+              "ts": "2026-11-20T08:46:59.000Z",
+              "service": "delivery",
+              "level": "info",
+              "msg": "carrier booking retry queue depth",
+              "pending": 95
+            }
+          },
+          {
+            "pattern": "delivery info: shipment status updated",
+            "count": 4,
+            "previous_window": 1,
+            "new": false,
+            "example": {
+              "ts": "2026-11-20T08:51:32.215Z",
+              "service": "delivery",
+              "level": "info",
+              "msg": "shipment status updated",
+              "trace_id": "6de9df55279a68b0cbce4ba2c56371b8",
+              "span_id": "03ec78ebc0f321bc",
+              "order_id": "ord_TKM3JT",
+              "shipment_id": "shp_2e8738a5",
+              "carrier_status": "DELIVERED"
+            }
+          },
+          {
+            "pattern": "delivery warn: carrier booking timed out, retry queued",
+            "count": 3,
+            "previous_window": 0,
+            "new": true,
+            "example": {
+              "ts": "2026-11-20T08:42:17.770Z",
+              "service": "delivery",
+              "level": "warn",
+              "msg": "carrier booking timed out, retry queued",
+              "trace_id": "739bba8ae0dacf84237c55fa655d5891",
+              "span_id": "0e6792f0aa19ae48",
+              "target": "carrier",
+              "order_id": "ord_N4VMCY",
+              "deadline_ms": 450,
+              "response_received": false
+            }
+          },
+          {
+            "pattern": "delivery info: carrier booked after retry",
+            "count": 3,
+            "previous_window": 0,
+            "new": true,
+            "example": {
+              "ts": "2026-11-20T09:10:20.789Z",
+              "service": "delivery",
+              "level": "info",
+              "msg": "carrier booked after retry",
+              "trace_id": "85b4e77b936a4d43766de415db6cd34c",
+              "span_id": "18178db9e500197c",
+              "order_id": "ord_N4VMCY",
+              "shipment_id": "shp_061c212e",
+              "carrier": "UPS",
+              "eta": "2026-11-23"
+            }
+          },
+          {
+            "pattern": "delivery info: carrier booked",
+            "count": 3,
+            "previous_window": 1,
+            "new": false,
+            "example": {
+              "ts": "2026-11-20T08:41:44.173Z",
+              "service": "delivery",
+              "level": "info",
+              "msg": "carrier booked",
+              "trace_id": "2e69a014343b9cfa206cad271a54ed7a",
+              "span_id": "b4b442a7bcd5e5ab",
+              "order_id": "ord_9GYMN7",
+              "shipment_id": "shp_09433a13",
+              "carrier": "DPD",
+              "eta": "2026-11-22"
+            }
+          },
+          {
+            "pattern": "delivery info: carrier booking client settings loaded",
+            "count": 2,
+            "previous_window": 0,
+            "new": true,
+            "example": {
+              "ts": "2026-11-20T08:42:00.000Z",
+              "service": "delivery",
+              "level": "info",
+              "msg": "carrier booking client settings loaded",
+              "operation": "POST /shipments",
+              "booking_deadline_ms": 450
+            }
+          },
+          {
+            "pattern": "delivery info: carrier booking retry queue drained",
+            "count": 1,
+            "previous_window": 0,
+            "new": true,
+            "example": {
+              "ts": "2026-11-20T09:22:00.000Z",
+              "service": "delivery",
+              "level": "info",
+              "msg": "carrier booking retry queue drained",
+              "retried": 548,
+              "pending": 0
+            }
+          },
+          {
+            "pattern": "delivery info: kafka offsets committed",
+            "count": 4,
+            "previous_window": 5,
+            "new": false,
+            "example": {
+              "ts": "2026-11-20T08:50:08.065Z",
+              "service": "delivery",
+              "level": "info",
+              "msg": "kafka offsets committed",
+              "group": "delivery",
+              "lag": 0
+            }
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "get_order_timeline",
+      "args": {
+        "order_id": "ord_N4VMCY"
+      },
+      "result": {
+        "order_id": "ord_N4VMCY",
+        "created_at": "2026-11-20T08:42:13.000Z",
+        "status": "PAID",
+        "amount": 60.5,
+        "currency": "EUR",
+        "items": 1,
+        "timeline": [
+          {
+            "ts": "2026-11-20T08:42:13.006Z",
+            "service": "order",
+            "event": "order created (status NEW)",
+            "trace_id": "8d1ccf1c8b268f92e90e4be2499ba0a7"
+          },
+          {
+            "ts": "2026-11-20T08:42:13.015Z",
+            "service": "catalog",
+            "event": "stock reserved",
+            "trace_id": "8d1ccf1c8b268f92e90e4be2499ba0a7"
+          },
+          {
+            "ts": "2026-11-20T08:42:13.184Z",
+            "service": "payment",
+            "event": "payment intent created",
+            "trace_id": "8d1ccf1c8b268f92e90e4be2499ba0a7"
+          },
+          {
+            "ts": "2026-11-20T08:42:13.190Z",
+            "service": "order",
+            "event": "status PENDING",
+            "trace_id": "8d1ccf1c8b268f92e90e4be2499ba0a7"
+          },
+          {
+            "ts": "2026-11-20T08:42:13.372Z",
+            "service": "order",
+            "event": "event published: order.created",
+            "trace_id": "8d1ccf1c8b268f92e90e4be2499ba0a7"
+          },
+          {
+            "ts": "2026-11-20T08:42:13.878Z",
+            "service": "notification",
+            "event": "email sent: order_received",
+            "trace_id": "8d1ccf1c8b268f92e90e4be2499ba0a7"
+          },
+          {
+            "ts": "2026-11-20T08:42:16.273Z",
+            "service": "payment",
+            "event": "Stripe webhook: payment_intent.succeeded",
+            "trace_id": "739bba8ae0dacf84237c55fa655d5891"
+          },
+          {
+            "ts": "2026-11-20T08:42:17.031Z",
+            "service": "order",
+            "event": "status PAID",
+            "trace_id": "739bba8ae0dacf84237c55fa655d5891"
+          },
+          {
+            "ts": "2026-11-20T08:42:17.234Z",
+            "service": "order",
+            "event": "event published: order.paid",
+            "trace_id": "739bba8ae0dacf84237c55fa655d5891"
+          },
+          {
+            "ts": "2026-11-20T08:42:17.770Z",
+            "service": "delivery",
+            "event": "booking timed out, retry queued",
+            "trace_id": "739bba8ae0dacf84237c55fa655d5891"
+          },
+          {
+            "ts": "2026-11-20T08:42:17.840Z",
+            "service": "notification",
+            "event": "email sent: order_confirmed",
+            "trace_id": "739bba8ae0dacf84237c55fa655d5891"
+          },
+          {
+            "ts": "2026-11-20T09:10:20.789Z",
+            "service": "delivery",
+            "event": "carrier booked after retry, ETA 2026-11-23",
+            "trace_id": "85b4e77b936a4d43766de415db6cd34c"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "search_logs",
+      "args": {
+        "service": "delivery",
+        "text": "carrier booking client settings loaded",
+        "from": "2026-11-20T08:41:00Z",
+        "to": "2026-11-20T09:24:00Z",
+        "limit": 4
+      },
+      "result": {
+        "count": 2,
+        "shown": 2,
+        "samples": [
+          {
+            "ts": "2026-11-20T08:42:00.000Z",
+            "service": "delivery",
+            "level": "info",
+            "msg": "carrier booking client settings loaded",
+            "operation": "POST /shipments",
+            "booking_deadline_ms": 450
+          },
+          {
+            "ts": "2026-11-20T09:10:00.000Z",
+            "service": "delivery",
+            "level": "info",
+            "msg": "carrier booking client settings loaded",
+            "operation": "POST /shipments",
+            "booking_deadline_ms": 5000
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "search_logs",
+      "args": {
+        "service": "delivery",
+        "text": "carrier booking retry queue drained",
+        "from": "2026-11-20T08:41:00Z",
+        "to": "2026-11-20T09:24:00Z",
+        "limit": 2
+      },
+      "result": {
+        "count": 1,
+        "shown": 1,
+        "samples": [
+          {
+            "ts": "2026-11-20T09:22:00.000Z",
+            "service": "delivery",
+            "level": "info",
+            "msg": "carrier booking retry queue drained",
+            "retried": 548,
+            "pending": 0
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "list_alerts",
+      "args": {
+        "state": "all",
+        "from": "2026-11-20T08:40:00Z",
+        "to": "2026-11-20T09:24:00Z"
+      },
+      "result": {
+        "now": "2026-11-20T12:00:00.000Z",
+        "state": "all",
+        "matches": [
+          {
+            "name": "ThirdPartyErrors",
+            "severity": "serious",
+            "fired_at": "2026-11-20T08:47:00.000Z",
+            "resolved_at": "2026-11-20T09:10:00.000Z",
+            "summary": "third_party_error_rate{provider=carrier} 100.0% > 5% for 5m"
+          }
+        ],
+        "rules": [
+          "CheckoutSuccessLow: checkout_success_rate < 90% for 10m [critical]",
+          "OrdersStuckPending: orders_stuck_pending_15m > 5 [critical]",
+          "PaymentSuccessLow: payment_success_rate < 90% for 10m [critical]",
+          "ServiceErrorRateHigh: http_error_rate > 2% for 5m (any service) [serious]",
+          "ServiceLatencyHigh: http_latency_p95_ms > 2x normal for 10m [warning]",
+          "PodRestarts: pod_restarts > 3 in 15m [serious]",
+          "PostgresDown: pg_up == 0 [critical]",
+          "PostgresConnectionsHigh: pg_connections_used > 80% of max [serious]",
+          "PostgresDiskHigh: pg_disk_used_pct > 80 [warning]",
+          "ReplicaLagHigh: pg_replication_lag_s > 30 for 5m [serious]",
+          "RedisMemoryHigh: redis_memory_used_mb > 85% of max [warning]",
+          "KafkaLagHigh: kafka_consumer_lag > 1000 for 10m [serious]",
+          "DlqGrowing: kafka_dlq_size grows in 15m [warning]",
+          "ThirdPartyErrors: third_party_error_rate > 5% for 5m [serious]",
+          "BadWebhookSignatures: webhook_bad_signatures_per_min > 10 [warning]",
+          "EmailsFailing: emails_failed_per_min > 5 for 10m [warning]",
+          "NodeDown: node_up == 0 [serious]"
+        ]
+      },
+      "error": null
+    }
+  ],
+  "final_output": "## Root cause\nThe 08:42 UTC Delivery carrier profile cut the booking deadline from 5 seconds to 450 ms. The 450 ms deadline was below the normal carrier p95 of about 668 ms. The client cancelled calls at the deadline before a carrier HTTP response. Delivery persisted the failed attempts for retry.\n\n## Evidence\nCarrier telemetry shows elevated client errors around the page during 08:42 to 09:10 UTC. Trace 739bba8ae0dacf84237c55fa655d5891 shows the client deadline and the retry insert. The Delivery settings logs show 450 ms at 08:42 and 5000 ms at 09:10. The 01:00 maintenance logs show HTTP 503 responses. The 08:42 failure is a client cancellation with no HTTP response.\n\n## Customer impact\nPaid orders waited for shipment booking. Delivery recorded 548 queued booking retries. Order ord_N4VMCY shows successful payment and confirmation, a queued booking, and a later successful retry.\n\n## Next steps\nThe 09:10 UTC rollback restored the five-second setting, and the ThirdPartyErrors page cleared at 09:10. Delivery logged zero pending retries at 09:22 UTC. No immediate action is needed. Monitor booking errors and reconcile by order reference before replaying any future timed-out bookings, since a cancelled request may have reached the carrier."
+}

@@ -1,0 +1,904 @@
+{
+  "agent": {
+    "name": "fixture-good",
+    "model": null
+  },
+  "input": "EmailsFailing [warning] at 2026-11-20 11:55 UTC\nemails_failed_per_min 1005 > 5 for 10m\n\nCurrent time: 2026-11-20 12:00 UTC.\nFind the cause, tell me the customer impact, and tell me what we should do now.",
+  "steps": [
+    {
+      "type": "tool_call",
+      "id": "t1",
+      "tool": "list_alerts",
+      "args": {
+        "state": "all",
+        "from": "2026-11-20T10:30:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "now": "2026-11-20T12:00:00.000Z",
+        "state": "all",
+        "matches": [
+          {
+            "name": "DlqGrowing",
+            "severity": "warning",
+            "fired_at": "2026-11-20T10:48:00.000Z",
+            "resolved_at": "2026-11-20T11:16:00.000Z",
+            "summary": "kafka_dlq_size{group=notification} grew in 15m"
+          },
+          {
+            "name": "ThirdPartyErrors",
+            "severity": "serious",
+            "fired_at": "2026-11-20T10:50:00.000Z",
+            "resolved_at": "2026-11-20T11:02:00.000Z",
+            "summary": "third_party_error_rate{provider=email} 63% > 5% for 5m"
+          },
+          {
+            "name": "EmailsFailing",
+            "severity": "warning",
+            "fired_at": "2026-11-20T10:55:00.000Z",
+            "resolved_at": "2026-11-20T11:02:00.000Z",
+            "summary": "emails_failed_per_min 1016 > 5 for 10m"
+          },
+          {
+            "name": "DlqGrowing",
+            "severity": "warning",
+            "fired_at": "2026-11-20T11:18:00.000Z",
+            "resolved_at": "2026-11-20T11:40:00.000Z",
+            "summary": "kafka_dlq_size{group=notification} grew in 15m"
+          },
+          {
+            "name": "ThirdPartyErrors",
+            "severity": "serious",
+            "fired_at": "2026-11-20T11:20:00.000Z",
+            "resolved_at": "2026-11-20T11:26:00.000Z",
+            "summary": "third_party_error_rate{provider=email} 63% > 5% for 5m"
+          },
+          {
+            "name": "EmailsFailing",
+            "severity": "warning",
+            "fired_at": "2026-11-20T11:25:00.000Z",
+            "resolved_at": "2026-11-20T11:26:00.000Z",
+            "summary": "emails_failed_per_min 818 > 5 for 10m"
+          },
+          {
+            "name": "ThirdPartyErrors",
+            "severity": "serious",
+            "fired_at": "2026-11-20T11:50:00.000Z",
+            "resolved_at": "2026-11-20T11:58:00.000Z",
+            "summary": "third_party_error_rate{provider=email} 63% > 5% for 5m"
+          },
+          {
+            "name": "DlqGrowing",
+            "severity": "warning",
+            "fired_at": "2026-11-20T11:51:00.000Z",
+            "resolved_at": null,
+            "summary": "kafka_dlq_size{group=notification} grew in 15m"
+          },
+          {
+            "name": "EmailsFailing",
+            "severity": "warning",
+            "fired_at": "2026-11-20T11:55:00.000Z",
+            "resolved_at": "2026-11-20T11:58:00.000Z",
+            "summary": "emails_failed_per_min 1028 > 5 for 10m"
+          }
+        ],
+        "rules": [
+          "CheckoutSuccessLow: checkout_success_rate < 90% for 10m [critical]",
+          "OrdersStuckPending: orders_stuck_pending_15m > 5 [critical]",
+          "PaymentSuccessLow: payment_success_rate < 90% for 10m [critical]",
+          "ServiceErrorRateHigh: http_error_rate > 2% for 5m (any service) [serious]",
+          "ServiceLatencyHigh: http_latency_p95_ms > 2x normal for 10m [warning]",
+          "PodRestarts: pod_restarts > 3 in 15m [serious]",
+          "PostgresDown: pg_up == 0 [critical]",
+          "PostgresConnectionsHigh: pg_connections_used > 80% of max [serious]",
+          "PostgresDiskHigh: pg_disk_used_pct > 80 [warning]",
+          "ReplicaLagHigh: pg_replication_lag_s > 30 for 5m [serious]",
+          "RedisMemoryHigh: redis_memory_used_mb > 85% of max [warning]",
+          "KafkaLagHigh: kafka_consumer_lag > 1000 for 10m [serious]",
+          "DlqGrowing: kafka_dlq_size grows in 15m [warning]",
+          "ThirdPartyErrors: third_party_error_rate > 5% for 5m [serious]",
+          "BadWebhookSignatures: webhook_bad_signatures_per_min > 10 [warning]",
+          "EmailsFailing: emails_failed_per_min > 5 for 10m [warning]",
+          "NodeDown: node_up == 0 [serious]"
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t2",
+      "tool": "third_party_health",
+      "args": {
+        "provider": "email",
+        "from": "2026-11-20T10:30:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "provider": "email",
+        "window": {
+          "from": "2026-11-20T10:30:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "metrics": {
+          "third_party_requests_per_min": {
+            "unit": "count",
+            "last": 61,
+            "min": 38,
+            "max": 1643,
+            "max_at": "2026-11-20T11:22:00.000Z",
+            "avg": 747.34,
+            "normal": 61
+          },
+          "third_party_error_rate": {
+            "unit": "%",
+            "last": 0,
+            "min": 0,
+            "max": 65.4,
+            "max_at": "2026-11-20T11:52:00.000Z",
+            "avg": 27.58,
+            "normal": 0
+          },
+          "third_party_latency_p95_ms": {
+            "unit": "ms",
+            "last": 211.1,
+            "min": 160.91,
+            "max": 262.1,
+            "max_at": "2026-11-20T10:31:00.000Z",
+            "avg": 211.17,
+            "normal": 225.9
+          }
+        },
+        "error_log_count": 628,
+        "error_log_samples": [
+          {
+            "ts": "2026-11-20T10:45:16.031Z",
+            "service": "notification",
+            "level": "warn",
+            "msg": "email failed, retry 1/3",
+            "template": "order_delivered",
+            "order_id": "ord_HD7685",
+            "error": "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main"
+          },
+          {
+            "ts": "2026-11-20T10:45:18.763Z",
+            "service": "notification",
+            "level": "warn",
+            "msg": "email failed, retry 1/3",
+            "template": "order_received",
+            "order_id": "ord_M5TVQX",
+            "error": "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main"
+          },
+          {
+            "ts": "2026-11-20T10:45:25.903Z",
+            "service": "notification",
+            "level": "warn",
+            "msg": "email failed, retry 1/3",
+            "template": "order_confirmed",
+            "order_id": "ord_VY2EYF",
+            "error": "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main"
+          },
+          {
+            "ts": "2026-11-20T10:45:36.794Z",
+            "service": "notification",
+            "level": "warn",
+            "msg": "email failed, retry 1/3",
+            "template": "order_received",
+            "order_id": "ord_G66KKX",
+            "error": "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main"
+          },
+          {
+            "ts": "2026-11-20T10:45:46.519Z",
+            "service": "notification",
+            "level": "warn",
+            "msg": "email failed, retry 1/3",
+            "template": "order_received",
+            "order_id": "ord_2SVMC9",
+            "error": "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t3",
+      "tool": "query_metric",
+      "args": {
+        "name": "third_party_requests_per_min",
+        "labels": {
+          "provider": "email"
+        },
+        "from": "2026-11-20T09:30:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "name": "third_party_requests_per_min",
+        "labels": {
+          "provider": "email"
+        },
+        "unit": "count",
+        "last": 61,
+        "min": 26,
+        "max": 1643,
+        "max_at": "2026-11-20T11:22:00.000Z",
+        "avg": 469.75,
+        "normal": 61,
+        "step_s": 180,
+        "points": [
+          {
+            "at": "2026-11-20T09:30:00.000Z",
+            "value": 61
+          },
+          {
+            "at": "2026-11-20T09:33:00.000Z",
+            "value": 67
+          },
+          {
+            "at": "2026-11-20T09:36:00.000Z",
+            "value": 48
+          },
+          {
+            "at": "2026-11-20T09:39:00.000Z",
+            "value": 64
+          },
+          {
+            "at": "2026-11-20T09:42:00.000Z",
+            "value": 59
+          },
+          {
+            "at": "2026-11-20T09:45:00.000Z",
+            "value": 63
+          },
+          {
+            "at": "2026-11-20T09:48:00.000Z",
+            "value": 46
+          },
+          {
+            "at": "2026-11-20T09:51:00.000Z",
+            "value": 55
+          },
+          {
+            "at": "2026-11-20T09:54:00.000Z",
+            "value": 55
+          },
+          {
+            "at": "2026-11-20T09:57:00.000Z",
+            "value": 78
+          },
+          {
+            "at": "2026-11-20T10:00:00.000Z",
+            "value": 85
+          },
+          {
+            "at": "2026-11-20T10:03:00.000Z",
+            "value": 67
+          },
+          {
+            "at": "2026-11-20T10:06:00.000Z",
+            "value": 64
+          },
+          {
+            "at": "2026-11-20T10:09:00.000Z",
+            "value": 76
+          },
+          {
+            "at": "2026-11-20T10:12:00.000Z",
+            "value": 48
+          },
+          {
+            "at": "2026-11-20T10:15:00.000Z",
+            "value": 55
+          },
+          {
+            "at": "2026-11-20T10:18:00.000Z",
+            "value": 70
+          },
+          {
+            "at": "2026-11-20T10:21:00.000Z",
+            "value": 64
+          },
+          {
+            "at": "2026-11-20T10:24:00.000Z",
+            "value": 61
+          },
+          {
+            "at": "2026-11-20T10:27:00.000Z",
+            "value": 68
+          },
+          {
+            "at": "2026-11-20T10:30:00.000Z",
+            "value": 66
+          },
+          {
+            "at": "2026-11-20T10:33:00.000Z",
+            "value": 47
+          },
+          {
+            "at": "2026-11-20T10:36:00.000Z",
+            "value": 74
+          },
+          {
+            "at": "2026-11-20T10:39:00.000Z",
+            "value": 71
+          },
+          {
+            "at": "2026-11-20T10:42:00.000Z",
+            "value": 79
+          },
+          {
+            "at": "2026-11-20T10:45:00.000Z",
+            "value": 1601
+          },
+          {
+            "at": "2026-11-20T10:48:00.000Z",
+            "value": 1615
+          },
+          {
+            "at": "2026-11-20T10:51:00.000Z",
+            "value": 1622
+          },
+          {
+            "at": "2026-11-20T10:54:00.000Z",
+            "value": 1638
+          },
+          {
+            "at": "2026-11-20T10:57:00.000Z",
+            "value": 1632
+          },
+          {
+            "at": "2026-11-20T11:00:00.000Z",
+            "value": 1572
+          },
+          {
+            "at": "2026-11-20T11:03:00.000Z",
+            "value": 78
+          },
+          {
+            "at": "2026-11-20T11:06:00.000Z",
+            "value": 84
+          },
+          {
+            "at": "2026-11-20T11:09:00.000Z",
+            "value": 64
+          },
+          {
+            "at": "2026-11-20T11:12:00.000Z",
+            "value": 96
+          },
+          {
+            "at": "2026-11-20T11:15:00.000Z",
+            "value": 1604
+          },
+          {
+            "at": "2026-11-20T11:18:00.000Z",
+            "value": 1637
+          },
+          {
+            "at": "2026-11-20T11:21:00.000Z",
+            "value": 1643
+          },
+          {
+            "at": "2026-11-20T11:24:00.000Z",
+            "value": 1399
+          },
+          {
+            "at": "2026-11-20T11:27:00.000Z",
+            "value": 78
+          },
+          {
+            "at": "2026-11-20T11:30:00.000Z",
+            "value": 76
+          },
+          {
+            "at": "2026-11-20T11:33:00.000Z",
+            "value": 78
+          },
+          {
+            "at": "2026-11-20T11:36:00.000Z",
+            "value": 77
+          },
+          {
+            "at": "2026-11-20T11:39:00.000Z",
+            "value": 77
+          },
+          {
+            "at": "2026-11-20T11:42:00.000Z",
+            "value": 66
+          },
+          {
+            "at": "2026-11-20T11:45:00.000Z",
+            "value": 1592
+          },
+          {
+            "at": "2026-11-20T11:48:00.000Z",
+            "value": 1636
+          },
+          {
+            "at": "2026-11-20T11:51:00.000Z",
+            "value": 1635
+          },
+          {
+            "at": "2026-11-20T11:54:00.000Z",
+            "value": 1628
+          },
+          {
+            "at": "2026-11-20T11:57:00.000Z",
+            "value": 722
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t4",
+      "tool": "search_logs",
+      "args": {
+        "service": "notification",
+        "text": "winback campaign run",
+        "from": "2026-11-20T10:30:00Z",
+        "to": "2026-11-20T12:00:00Z",
+        "limit": 10
+      },
+      "result": {
+        "count": 6,
+        "shown": 6,
+        "samples": [
+          {
+            "ts": "2026-11-20T10:45:00.600Z",
+            "service": "notification",
+            "level": "info",
+            "msg": "winback campaign run started",
+            "job": "winback_campaign",
+            "recipients": 9666,
+            "api_key": "sg_main",
+            "template": "bf_winback"
+          },
+          {
+            "ts": "2026-11-20T11:02:45.742Z",
+            "service": "notification",
+            "level": "info",
+            "msg": "winback campaign run finished",
+            "job": "winback_campaign",
+            "sent": 9666,
+            "throttled": 15550,
+            "duration_s": 1080
+          },
+          {
+            "ts": "2026-11-20T11:15:00.600Z",
+            "service": "notification",
+            "level": "info",
+            "msg": "winback campaign run started",
+            "job": "winback_campaign",
+            "recipients": 6217,
+            "api_key": "sg_main",
+            "template": "bf_winback"
+          },
+          {
+            "ts": "2026-11-20T11:26:52.079Z",
+            "service": "notification",
+            "level": "info",
+            "msg": "winback campaign run finished",
+            "job": "winback_campaign",
+            "sent": 6217,
+            "throttled": 9584,
+            "duration_s": 720
+          },
+          {
+            "ts": "2026-11-20T11:45:00.600Z",
+            "service": "notification",
+            "level": "info",
+            "msg": "winback campaign run started",
+            "job": "winback_campaign",
+            "recipients": 7164,
+            "api_key": "sg_main",
+            "template": "bf_winback"
+          },
+          {
+            "ts": "2026-11-20T11:58:57.292Z",
+            "service": "notification",
+            "level": "info",
+            "msg": "winback campaign run finished",
+            "job": "winback_campaign",
+            "sent": 7164,
+            "throttled": 11195,
+            "duration_s": 840
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t5",
+      "tool": "list_changes",
+      "args": {
+        "from": "2026-11-20T09:00:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "window": {
+          "from": "2026-11-20T09:00:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "changes": [
+          {
+            "type": "deploy",
+            "ts": "2026-11-20T09:40:00.000Z",
+            "service": "cart",
+            "version": "v2.1.0",
+            "previous": "v2.0.7",
+            "summary": "Upgrade Redis client library",
+            "by": "ci-bot",
+            "commit": "e2be4fd"
+          },
+          {
+            "type": "config",
+            "ts": "2026-11-20T10:38:00.000Z",
+            "service": "notification",
+            "summary": "Turn on winback_campaign job (Black Friday win-back emails)",
+            "by": "marketing"
+          }
+        ],
+        "last_change_before_window": {
+          "type": "deploy",
+          "ts": "2026-11-20T03:30:00.000Z",
+          "service": "notification",
+          "version": "v0.9.4",
+          "previous": "v0.9.3",
+          "summary": "New email template for shipped orders",
+          "by": "ci-bot",
+          "commit": "2b2b27f"
+        }
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t6",
+      "tool": "dlq_sample",
+      "args": {
+        "group": "notification",
+        "from": "2026-11-20T10:30:00Z",
+        "to": "2026-11-20T12:00:00Z",
+        "limit": 3
+      },
+      "result": {
+        "count": 420,
+        "by_error": {
+          "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main": 419,
+          "550 recipient address rejected: mailbox does not exist": 1
+        },
+        "samples": [
+          {
+            "ts": "2026-11-20T11:57:38.419Z",
+            "service": "notification",
+            "level": "error",
+            "msg": "email failed 3 times, message moved to DLQ",
+            "template": "order_confirmed",
+            "order_id": "ord_2JRVAB",
+            "error": "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main",
+            "group": "notification",
+            "topic": "order.paid"
+          },
+          {
+            "ts": "2026-11-20T11:57:40.914Z",
+            "service": "notification",
+            "level": "error",
+            "msg": "email failed 3 times, message moved to DLQ",
+            "template": "order_delivered",
+            "order_id": "ord_4PDBBJ",
+            "error": "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main",
+            "group": "notification",
+            "topic": "delivery.updated"
+          },
+          {
+            "ts": "2026-11-20T11:57:56.130Z",
+            "service": "notification",
+            "level": "error",
+            "msg": "email failed 3 times, message moved to DLQ",
+            "template": "order_delivered",
+            "order_id": "ord_TVWMPP",
+            "error": "429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main",
+            "group": "notification",
+            "topic": "delivery.updated"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t7",
+      "tool": "business_kpis",
+      "args": {
+        "from": "2026-11-20T10:30:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "window": {
+          "from": "2026-11-20T10:30:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "checkout_attempts": 2622,
+        "checkout_success_pct": 96.76,
+        "lowest_minute_checkout_success_pct": 85.71,
+        "lowest_minute_payment_success_pct": 85.71,
+        "max_orders_stuck_pending_15m": 0,
+        "metrics": {
+          "checkout_attempts_per_min": {
+            "unit": "count",
+            "last": 30,
+            "min": 17,
+            "max": 46,
+            "max_at": "2026-11-20T11:14:00.000Z",
+            "avg": 29.13,
+            "normal": 24
+          },
+          "checkout_success_rate": {
+            "unit": "%",
+            "last": 96.67,
+            "min": 85.71,
+            "max": 100,
+            "max_at": "2026-11-20T10:31:00.000Z",
+            "avg": 96.72,
+            "normal": 100
+          },
+          "payment_success_rate": {
+            "unit": "%",
+            "last": 96.67,
+            "min": 85.71,
+            "max": 100,
+            "max_at": "2026-11-20T10:31:00.000Z",
+            "avg": 97.07,
+            "normal": 100
+          },
+          "orders_pending": {
+            "unit": "count",
+            "last": 3,
+            "min": 0,
+            "max": 7,
+            "max_at": "2026-11-20T11:02:00.000Z",
+            "avg": 2.56,
+            "normal": 2
+          },
+          "orders_stuck_pending_15m": {
+            "unit": "count",
+            "last": 0,
+            "min": 0,
+            "max": 0,
+            "max_at": "2026-11-20T10:30:00.000Z",
+            "avg": 0,
+            "normal": 0
+          },
+          "order_outbox_unpublished": {
+            "unit": "count",
+            "last": 1,
+            "min": 0,
+            "max": 4,
+            "max_at": "2026-11-20T10:57:00.000Z",
+            "avg": 0.37,
+            "normal": 0
+          },
+          "emails_failed_per_min": {
+            "unit": "count",
+            "last": 0,
+            "min": 0,
+            "max": 1067,
+            "max_at": "2026-11-20T11:18:00.000Z",
+            "avg": 433.67,
+            "normal": 0
+          },
+          "auth_login_success_rate": {
+            "unit": "%",
+            "last": 92.65,
+            "min": 80.77,
+            "max": 100,
+            "max_at": "2026-11-20T10:38:00.000Z",
+            "avg": 93.05,
+            "normal": 93.33
+          }
+        }
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t8",
+      "tool": "get_order_timeline",
+      "args": {
+        "order_id": "ord_UH4CQ3"
+      },
+      "result": {
+        "order_id": "ord_UH4CQ3",
+        "created_at": "2026-11-20T10:52:38.373Z",
+        "status": "PAID",
+        "amount": 234.27,
+        "currency": "EUR",
+        "items": 2,
+        "timeline": [
+          {
+            "ts": "2026-11-20T10:52:38.381Z",
+            "service": "order",
+            "event": "order created (status NEW)",
+            "trace_id": "d3cdeeb17a07bd291a0f41a30f091b6c"
+          },
+          {
+            "ts": "2026-11-20T10:52:38.393Z",
+            "service": "catalog",
+            "event": "stock reserved",
+            "trace_id": "d3cdeeb17a07bd291a0f41a30f091b6c"
+          },
+          {
+            "ts": "2026-11-20T10:52:38.777Z",
+            "service": "payment",
+            "event": "payment intent created",
+            "trace_id": "d3cdeeb17a07bd291a0f41a30f091b6c"
+          },
+          {
+            "ts": "2026-11-20T10:52:38.783Z",
+            "service": "order",
+            "event": "status PENDING",
+            "trace_id": "d3cdeeb17a07bd291a0f41a30f091b6c"
+          },
+          {
+            "ts": "2026-11-20T10:52:39.366Z",
+            "service": "order",
+            "event": "event published: order.created",
+            "trace_id": "d3cdeeb17a07bd291a0f41a30f091b6c"
+          },
+          {
+            "ts": "2026-11-20T10:52:39.663Z",
+            "service": "notification",
+            "event": "email failed (429), retry 1/3",
+            "trace_id": "d3cdeeb17a07bd291a0f41a30f091b6c"
+          },
+          {
+            "ts": "2026-11-20T10:52:40.416Z",
+            "service": "payment",
+            "event": "Stripe webhook: payment_intent.succeeded",
+            "trace_id": "4127b23e7740e3dd6297875606e7b137"
+          },
+          {
+            "ts": "2026-11-20T10:52:40.864Z",
+            "service": "order",
+            "event": "status PAID",
+            "trace_id": "4127b23e7740e3dd6297875606e7b137"
+          },
+          {
+            "ts": "2026-11-20T10:52:41.532Z",
+            "service": "order",
+            "event": "event published: order.paid",
+            "trace_id": "4127b23e7740e3dd6297875606e7b137"
+          },
+          {
+            "ts": "2026-11-20T10:52:41.743Z",
+            "service": "notification",
+            "event": "email failed (429), retry 1/3",
+            "trace_id": "4127b23e7740e3dd6297875606e7b137"
+          },
+          {
+            "ts": "2026-11-20T10:52:42.214Z",
+            "service": "delivery",
+            "event": "carrier booked, ETA 2026-11-22",
+            "trace_id": "4127b23e7740e3dd6297875606e7b137"
+          },
+          {
+            "ts": "2026-11-20T10:53:11.557Z",
+            "service": "notification",
+            "event": "email sent: order_received",
+            "trace_id": "d3cdeeb17a07bd291a0f41a30f091b6c"
+          },
+          {
+            "ts": "2026-11-20T10:53:11.883Z",
+            "service": "notification",
+            "event": "email failed (429), retry 2/3",
+            "trace_id": "4127b23e7740e3dd6297875606e7b137"
+          },
+          {
+            "ts": "2026-11-20T10:55:10.590Z",
+            "service": "notification",
+            "event": "email moved to DLQ: order_confirmed",
+            "trace_id": "4127b23e7740e3dd6297875606e7b137"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t9",
+      "tool": "get_service_health",
+      "args": {
+        "service": "notification",
+        "from": "2026-11-20T10:30:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "service": "notification",
+        "window": {
+          "from": "2026-11-20T10:30:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "healthy": true,
+        "problems": [],
+        "signals": {
+          "http_requests_per_second": {
+            "unit": "req/s",
+            "last": 0.93,
+            "min": 0.84,
+            "max": 1.11,
+            "max_at": "2026-11-20T11:19:00.000Z",
+            "avg": 0.97,
+            "normal": 0.81
+          },
+          "http_error_rate": {
+            "unit": "%",
+            "last": 0,
+            "min": 0,
+            "max": 1.72,
+            "max_at": "2026-11-20T10:59:00.000Z",
+            "avg": 0.02,
+            "normal": 0
+          },
+          "http_latency_p95_ms": {
+            "unit": "ms",
+            "last": 30.8,
+            "min": 27.7,
+            "max": 38.1,
+            "max_at": "2026-11-20T11:26:00.000Z",
+            "avg": 32.59,
+            "normal": 31.3
+          },
+          "http_latency_p99_ms": {
+            "unit": "ms",
+            "last": 62.5,
+            "min": 48.1,
+            "max": 70.2,
+            "max_at": "2026-11-20T11:45:00.000Z",
+            "avg": 59.66,
+            "normal": 57.4
+          },
+          "cpu_pct": {
+            "unit": "%",
+            "last": 17,
+            "min": 13.7,
+            "max": 20.7,
+            "max_at": "2026-11-20T11:45:00.000Z",
+            "avg": 16.87,
+            "normal": 14.7
+          },
+          "memory_mb": {
+            "unit": "MB",
+            "last": 332.29,
+            "min": 234.99,
+            "max": 332.29,
+            "max_at": "2026-11-20T11:59:00.000Z",
+            "avg": 282.94,
+            "normal": 337.53
+          },
+          "pod_restarts": {
+            "unit": "count",
+            "last": 0,
+            "min": 0,
+            "max": 0,
+            "max_at": "2026-11-20T10:30:00.000Z",
+            "avg": 0,
+            "normal": 0
+          },
+          "pods_ready": {
+            "unit": "count",
+            "last": 2,
+            "min": 2,
+            "max": 2,
+            "max_at": "2026-11-20T10:30:00.000Z",
+            "avg": 2,
+            "normal": 2
+          }
+        }
+      },
+      "error": null
+    }
+  ],
+  "final_output": "## Root cause\nThe `winback_campaign` job in Notification uses up the email rate limit. Marketing turned it on at 10:38 UTC (config change \"Turn on winback_campaign job (Black Friday win-back emails)\", by marketing). The job runs at 10:45, 11:15 and 11:45. In each run it sends thousands of win-back emails (9,666, 6,217 and 7,164 recipients) with the API key `sg_main`. This is the same key as the order emails. The email provider allows 600 requests per minute for this key. It returns \"429 Too Many Requests: rate limit of 600 requests/min exceeded for API key sg_main\" for the rest. Order emails share the limit with the job, so most of them fail while a run is active. The provider is healthy.\n\n## Evidence\n- Changes: config change on notification at 10:38 UTC by marketing. The \"winback campaign run started\" lines (job=winback_campaign, api_key=sg_main) are at 10:45:00 (9,666 recipients), 11:15:00 (6,217) and 11:45:00 (7,164). The \"run finished\" lines are at 11:02, 11:26 and 11:58. Each run was throttled 9,000 to 15,000 times.\n- Email requests (third_party_requests_per_min, provider=email) are about 50 to 85 per minute until 10:44. In the runs they go up to 1,643 (peak 11:22). The order counts do not change, so the extra requests are not order emails.\n- The email error rate is up to 65.4% in the runs and 0 between them. The alerts fire in each run: EmailsFailing at 10:55, 11:25 and 11:55, ThirdPartyErrors (email) at 10:50, 11:20 and 11:50, and DlqGrowing. Each alert resolves when the run ends.\n- Notification logs \"email failed, retry 1/3\" and \"email failed 3 times, message moved to DLQ\" with the 429 error above. dlq_sample shows 419 messages with 429 and 1 with \"550 recipient address rejected: mailbox does not exist\" in 10:30 to 12:00. The 550 message is a deleted-user mailbox error, not a 429, so it is not part of this fault.\n- Order ord_UH4CQ3 (10:52): \"email failed (429), retry 1/3\" for two emails, one email sent late at 10:53, and the order_confirmed email moved to the DLQ at 10:55 after 3 tries.\n- Dead ends: the provider latency (p95 about 210 ms) is the same as before, and the only error is 429 for our key. Notification has no pod restart in 10:30 to 12:00 and its health is good. The 03:30 Notification deploy is 7 hours before the first failure. So the provider, the OOM leak and the deploy are not the cause.\n\n## Customer impact\nOrder emails (received, confirmed, shipped, delivered) fail on the first try during each run. Most are sent after a retry, 30 s to 2.5 min late. 419 fail 3 times and go to the notification DLQ, so those customers do not get the email. Emails are normal between the runs, but this repeats every 30 minutes while the job is on. Checkout success and payment success stay high (96.8% and 97.1% on average in 10:30 to 12:00), and no order is stuck (orders_stuck_pending_15m is 0). The last run ended at 11:58. The next run is at 12:15.\n\n## Next steps\n1. Pause the `winback_campaign` job now, before 12:15.\n2. Replay the 419 DLQ messages with the 429 error. Do not replay the deleted-user messages (550).\n3. Before the job runs again, give it its own API key (or provider), or a send limit well under 600 requests per minute.\n4. Check that no 429 appears at the next :15 or :45, and that emails_failed_per_min stays at 0.\n"
+}

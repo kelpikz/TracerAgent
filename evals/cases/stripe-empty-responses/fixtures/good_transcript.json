@@ -1,0 +1,813 @@
+{
+  "agent": {
+    "name": "fixture-good",
+    "model": null
+  },
+  "input": "CheckoutSuccessLow [critical] at 2026-11-20 11:29 UTC\ncheckout_success_rate 41.7% < 90% for 10m\n\nCurrent time: 2026-11-20 12:00 UTC.\nFind the cause, tell me the customer impact, and tell me what we should do now.",
+  "steps": [
+    {
+      "type": "tool_call",
+      "id": "t1",
+      "tool": "list_alerts",
+      "args": {
+        "state": "firing"
+      },
+      "result": {
+        "now": "2026-11-20T12:00:00.000Z",
+        "state": "firing",
+        "matches": [
+          {
+            "name": "ServiceErrorRateHigh",
+            "severity": "serious",
+            "fired_at": "2026-11-20T11:25:00.000Z",
+            "resolved_at": null,
+            "summary": "http_error_rate{service=payment} 5.1% > 2% for 5m"
+          },
+          {
+            "name": "ServiceErrorRateHigh",
+            "severity": "serious",
+            "fired_at": "2026-11-20T11:25:00.000Z",
+            "resolved_at": null,
+            "summary": "http_error_rate{service=order} 4.0% > 2% for 5m"
+          },
+          {
+            "name": "CheckoutSuccessLow",
+            "severity": "critical",
+            "fired_at": "2026-11-20T11:29:00.000Z",
+            "resolved_at": null,
+            "summary": "checkout_success_rate 41.7% < 90% for 10m"
+          },
+          {
+            "name": "PaymentSuccessLow",
+            "severity": "critical",
+            "fired_at": "2026-11-20T11:29:00.000Z",
+            "resolved_at": null,
+            "summary": "payment_success_rate 41.7% < 90% for 10m"
+          },
+          {
+            "name": "ServiceLatencyHigh",
+            "severity": "warning",
+            "fired_at": "2026-11-20T11:30:00.000Z",
+            "resolved_at": null,
+            "summary": "http_latency_p95_ms{service=payment} 9539 ms > 2x normal (353 ms) for 10m"
+          },
+          {
+            "name": "ServiceLatencyHigh",
+            "severity": "warning",
+            "fired_at": "2026-11-20T11:30:00.000Z",
+            "resolved_at": null,
+            "summary": "http_latency_p95_ms{service=order} 9569 ms > 2x normal (436 ms) for 10m"
+          },
+          {
+            "name": "DlqGrowing",
+            "severity": "warning",
+            "fired_at": "2026-11-20T11:51:00.000Z",
+            "resolved_at": null,
+            "summary": "kafka_dlq_size{group=notification} grew in 15m"
+          }
+        ],
+        "rules": [
+          "CheckoutSuccessLow: checkout_success_rate < 90% for 10m [critical]",
+          "OrdersStuckPending: orders_stuck_pending_15m > 5 [critical]",
+          "PaymentSuccessLow: payment_success_rate < 90% for 10m [critical]",
+          "ServiceErrorRateHigh: http_error_rate > 2% for 5m (any service) [serious]",
+          "ServiceLatencyHigh: http_latency_p95_ms > 2x normal for 10m [warning]",
+          "PodRestarts: pod_restarts > 3 in 15m [serious]",
+          "PostgresDown: pg_up == 0 [critical]",
+          "PostgresConnectionsHigh: pg_connections_used > 80% of max [serious]",
+          "PostgresDiskHigh: pg_disk_used_pct > 80 [warning]",
+          "ReplicaLagHigh: pg_replication_lag_s > 30 for 5m [serious]",
+          "RedisMemoryHigh: redis_memory_used_mb > 85% of max [warning]",
+          "KafkaLagHigh: kafka_consumer_lag > 1000 for 10m [serious]",
+          "DlqGrowing: kafka_dlq_size grows in 15m [warning]",
+          "ThirdPartyErrors: third_party_error_rate > 5% for 5m [serious]",
+          "BadWebhookSignatures: webhook_bad_signatures_per_min > 10 [warning]",
+          "EmailsFailing: emails_failed_per_min > 5 for 10m [warning]",
+          "NodeDown: node_up == 0 [serious]"
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t2",
+      "tool": "business_kpis",
+      "args": {
+        "from": "2026-11-20T11:20:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "window": {
+          "from": "2026-11-20T11:20:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "checkout_attempts": 1182,
+        "checkout_success_pct": 38.66,
+        "lowest_minute_checkout_success_pct": 22.22,
+        "lowest_minute_payment_success_pct": 22.22,
+        "max_orders_stuck_pending_15m": 1,
+        "metrics": {
+          "checkout_attempts_per_min": {
+            "unit": "count",
+            "last": 30,
+            "min": 21,
+            "max": 41,
+            "max_at": "2026-11-20T11:22:00.000Z",
+            "avg": 29.55,
+            "normal": 24
+          },
+          "checkout_success_rate": {
+            "unit": "%",
+            "last": 36.67,
+            "min": 22.22,
+            "max": 56.52,
+            "max_at": "2026-11-20T11:49:00.000Z",
+            "avg": 39,
+            "normal": 100
+          },
+          "payment_success_rate": {
+            "unit": "%",
+            "last": 36.67,
+            "min": 22.22,
+            "max": 57.69,
+            "max_at": "2026-11-20T11:24:00.000Z",
+            "avg": 39.19,
+            "normal": 100
+          },
+          "orders_pending": {
+            "unit": "count",
+            "last": 2,
+            "min": 0,
+            "max": 3,
+            "max_at": "2026-11-20T11:27:00.000Z",
+            "avg": 1.78,
+            "normal": 2
+          },
+          "orders_stuck_pending_15m": {
+            "unit": "count",
+            "last": 1,
+            "min": 0,
+            "max": 1,
+            "max_at": "2026-11-20T11:42:00.000Z",
+            "avg": 0.45,
+            "normal": 0
+          },
+          "order_outbox_unpublished": {
+            "unit": "count",
+            "last": 1,
+            "min": 0,
+            "max": 2,
+            "max_at": "2026-11-20T11:58:00.000Z",
+            "avg": 0.33,
+            "normal": 0
+          },
+          "emails_failed_per_min": {
+            "unit": "count",
+            "last": 0,
+            "min": 0,
+            "max": 1,
+            "max_at": "2026-11-20T11:49:00.000Z",
+            "avg": 0.08,
+            "normal": 0
+          },
+          "auth_login_success_rate": {
+            "unit": "%",
+            "last": 92.65,
+            "min": 80.77,
+            "max": 100,
+            "max_at": "2026-11-20T11:33:00.000Z",
+            "avg": 92.22,
+            "normal": 93.33
+          }
+        }
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t3",
+      "tool": "list_changes",
+      "args": {
+        "from": "2026-11-20T10:30:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "window": {
+          "from": "2026-11-20T10:30:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "changes": [
+          {
+            "type": "deploy",
+            "ts": "2026-11-20T11:16:00.000Z",
+            "service": "order",
+            "summary": "Add gift message field to orders",
+            "by": "ci-bot",
+            "version": "v4.12.0",
+            "previous": "v4.11.3",
+            "commit": "360e4ad"
+          }
+        ],
+        "last_change_before_window": {
+          "type": "deploy",
+          "ts": "2026-11-20T09:40:00.000Z",
+          "service": "cart",
+          "version": "v2.1.0",
+          "previous": "v2.0.7",
+          "summary": "Upgrade Redis client library",
+          "by": "ci-bot",
+          "commit": "e2be4fd"
+        }
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t4",
+      "tool": "find_traces",
+      "args": {
+        "route": "POST /checkout",
+        "status": "error",
+        "from": "2026-11-20T11:15:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "count": 18,
+        "traces": [
+          {
+            "trace_id": "aca55dbebae747f12388b76923472fac",
+            "start": "2026-11-20T11:22:41.843Z",
+            "root": "POST /checkout",
+            "status": "error",
+            "http_status": 502,
+            "total_ms": 6829.63,
+            "services": [
+              "catalog",
+              "gateway",
+              "order",
+              "payment"
+            ],
+            "failed_span": "gateway: POST /checkout"
+          },
+          {
+            "trace_id": "fc46b5cbd5ea346d7ec2877e99b68b78",
+            "start": "2026-11-20T11:23:45.698Z",
+            "root": "POST /checkout",
+            "status": "error",
+            "http_status": 502,
+            "total_ms": 5948.25,
+            "services": [
+              "catalog",
+              "gateway",
+              "order",
+              "payment"
+            ],
+            "failed_span": "gateway: POST /checkout"
+          },
+          {
+            "trace_id": "1f0e140d72b7f72866606b8ff1e2ca93",
+            "start": "2026-11-20T11:25:45.611Z",
+            "root": "POST /checkout",
+            "status": "error",
+            "http_status": 502,
+            "total_ms": 9630.09,
+            "services": [
+              "catalog",
+              "gateway",
+              "order",
+              "payment"
+            ],
+            "failed_span": "gateway: POST /checkout"
+          },
+          {
+            "trace_id": "55da3964ede59a13ae6d1d20ac308392",
+            "start": "2026-11-20T11:26:20.536Z",
+            "root": "POST /checkout",
+            "status": "error",
+            "http_status": 502,
+            "total_ms": 7624.89,
+            "services": [
+              "catalog",
+              "gateway",
+              "order",
+              "payment"
+            ],
+            "failed_span": "gateway: POST /checkout"
+          },
+          {
+            "trace_id": "3dbb140298d5818203d11c40c500fb89",
+            "start": "2026-11-20T11:29:04.009Z",
+            "root": "POST /checkout",
+            "status": "error",
+            "http_status": 502,
+            "total_ms": 9483.65,
+            "services": [
+              "catalog",
+              "gateway",
+              "order",
+              "payment"
+            ],
+            "failed_span": "gateway: POST /checkout"
+          },
+          {
+            "trace_id": "c028bb45739923ab49cf7442816144af",
+            "start": "2026-11-20T11:31:28.336Z",
+            "root": "POST /checkout",
+            "status": "error",
+            "http_status": 502,
+            "total_ms": 8459.06,
+            "services": [
+              "catalog",
+              "gateway",
+              "order",
+              "payment"
+            ],
+            "failed_span": "gateway: POST /checkout"
+          },
+          {
+            "trace_id": "153ffc3d781737b22522d543604882ce",
+            "start": "2026-11-20T11:36:18.706Z",
+            "root": "POST /checkout",
+            "status": "error",
+            "http_status": 502,
+            "total_ms": 5063.77,
+            "services": [
+              "catalog",
+              "gateway",
+              "order",
+              "payment"
+            ],
+            "failed_span": "gateway: POST /checkout"
+          },
+          {
+            "trace_id": "8139ac9f58c1fbfe9d1bf0a1efb1b3de",
+            "start": "2026-11-20T11:39:11.231Z",
+            "root": "POST /checkout",
+            "status": "error",
+            "http_status": 502,
+            "total_ms": 8380.74,
+            "services": [
+              "catalog",
+              "gateway",
+              "order",
+              "payment"
+            ],
+            "failed_span": "gateway: POST /checkout"
+          },
+          {
+            "trace_id": "4d366ba6b11580db63fb652059245c80",
+            "start": "2026-11-20T11:40:26.324Z",
+            "root": "POST /checkout",
+            "status": "error",
+            "http_status": 502,
+            "total_ms": 7689.95,
+            "services": [
+              "catalog",
+              "gateway",
+              "order",
+              "payment"
+            ],
+            "failed_span": "gateway: POST /checkout"
+          },
+          {
+            "trace_id": "415b8e19673329dc61ccf572d9f4c83e",
+            "start": "2026-11-20T11:44:23.173Z",
+            "root": "POST /checkout",
+            "status": "error",
+            "http_status": 502,
+            "total_ms": 7141.46,
+            "services": [
+              "catalog",
+              "gateway",
+              "order",
+              "payment"
+            ],
+            "failed_span": "gateway: POST /checkout"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t5",
+      "tool": "get_trace",
+      "args": {
+        "trace_id": "aca55dbebae747f12388b76923472fac"
+      },
+      "result": {
+        "trace_id": "aca55dbebae747f12388b76923472fac",
+        "root": "POST /checkout",
+        "start": "2026-11-20T11:22:41.843Z",
+        "status": "error",
+        "http_status": 502,
+        "total_ms": 6829.63,
+        "spans": [
+          {
+            "id": "b66a46890b45358b",
+            "parent": null,
+            "service": "gateway",
+            "name": "POST /checkout",
+            "kind": "server",
+            "offset_ms": 0,
+            "duration_ms": 6829.63,
+            "status": "error",
+            "attrs": {
+              "http_status": 502
+            }
+          },
+          {
+            "id": "bf7cb4ca5660826a",
+            "parent": "b66a46890b45358b",
+            "service": "order",
+            "name": "POST /checkout",
+            "kind": "server",
+            "offset_ms": 1.33,
+            "duration_ms": 6827.41,
+            "status": "error",
+            "attrs": {
+              "http_status": 502,
+              "order_id": "ord_8A9BF2",
+              "error": "payment returned 502"
+            }
+          },
+          {
+            "id": "ff4ae950d6f3a1cc",
+            "parent": "bf7cb4ca5660826a",
+            "service": "order",
+            "name": "pg INSERT orders",
+            "kind": "client",
+            "offset_ms": 2.17,
+            "duration_ms": 5.58,
+            "status": "ok",
+            "attrs": {
+              "db": "orders"
+            }
+          },
+          {
+            "id": "2de3599d15dd6b78",
+            "parent": "bf7cb4ca5660826a",
+            "service": "catalog",
+            "name": "POST /stock/reserve",
+            "kind": "server",
+            "offset_ms": 8.34,
+            "duration_ms": 12.08,
+            "status": "ok",
+            "attrs": {
+              "http_status": 200,
+              "order_id": "ord_8A9BF2",
+              "items": 3
+            }
+          },
+          {
+            "id": "1d4d654f07b7cf0e",
+            "parent": "2de3599d15dd6b78",
+            "service": "catalog",
+            "name": "pg UPDATE stock",
+            "kind": "client",
+            "offset_ms": 8.96,
+            "duration_ms": 8.18,
+            "status": "ok",
+            "attrs": {
+              "db": "catalog"
+            }
+          },
+          {
+            "id": "17a2ec226fac4844",
+            "parent": "bf7cb4ca5660826a",
+            "service": "payment",
+            "name": "POST /payments",
+            "kind": "server",
+            "offset_ms": 20.93,
+            "duration_ms": 6791.12,
+            "status": "error",
+            "attrs": {
+              "http_status": 502,
+              "order_id": "ord_8A9BF2",
+              "payment_id": "pay_cb1f2100bc",
+              "amount": 215.17,
+              "currency": "EUR",
+              "error": "failed to parse stripe response: unexpected end of JSON input"
+            }
+          },
+          {
+            "id": "6941332b62b4dee4",
+            "parent": "17a2ec226fac4844",
+            "service": "payment",
+            "name": "stripe POST /v1/payment_intents",
+            "kind": "client",
+            "offset_ms": 21.96,
+            "duration_ms": 6787.7,
+            "status": "ok",
+            "attrs": {
+              "peer": "stripe",
+              "http_status": 200,
+              "body_bytes": 0
+            }
+          },
+          {
+            "id": "f1d2f10b3963cd97",
+            "parent": "17a2ec226fac4844",
+            "service": "payment",
+            "name": "parse stripe response",
+            "kind": "internal",
+            "offset_ms": 6810.43,
+            "duration_ms": 0.16,
+            "status": "error",
+            "attrs": {
+              "error": "unexpected end of JSON input"
+            }
+          },
+          {
+            "id": "0456594751433244",
+            "parent": "bf7cb4ca5660826a",
+            "service": "catalog",
+            "name": "POST /stock/release",
+            "kind": "server",
+            "offset_ms": 6812.54,
+            "duration_ms": 7.43,
+            "status": "ok",
+            "attrs": {
+              "http_status": 200,
+              "order_id": "ord_8A9BF2"
+            }
+          },
+          {
+            "id": "5f84b95b47bf9053",
+            "parent": "0456594751433244",
+            "service": "catalog",
+            "name": "pg UPDATE stock",
+            "kind": "client",
+            "offset_ms": 6813.49,
+            "duration_ms": 5.23,
+            "status": "ok",
+            "attrs": {
+              "db": "catalog"
+            }
+          },
+          {
+            "id": "85db2d70b52f33ef",
+            "parent": "bf7cb4ca5660826a",
+            "service": "order",
+            "name": "pg UPDATE orders",
+            "kind": "client",
+            "offset_ms": 6820.91,
+            "duration_ms": 4.32,
+            "status": "ok",
+            "attrs": {
+              "db": "orders"
+            }
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t6",
+      "tool": "log_patterns",
+      "args": {
+        "service": "payment",
+        "from": "2026-11-20T11:20:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "window": {
+          "from": "2026-11-20T11:20:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "patterns": [
+          {
+            "pattern": "payment error: failed to parse stripe response",
+            "count": 191,
+            "previous_window": 0,
+            "new": true,
+            "example": {
+              "ts": "2026-11-20T11:20:38.017Z",
+              "service": "payment",
+              "level": "error",
+              "msg": "failed to parse stripe response",
+              "order_id": "ord_G4Z984",
+              "payment_id": "pay_415ac225a0",
+              "stripe_latency_ms": 6812,
+              "error": "unexpected end of JSON input"
+            }
+          },
+          {
+            "pattern": "payment info: payment intent created",
+            "count": 11,
+            "previous_window": 3,
+            "new": false,
+            "example": {
+              "ts": "2026-11-20T11:20:00.572Z",
+              "service": "payment",
+              "level": "info",
+              "msg": "payment intent created",
+              "trace_id": "58761a412e170ca8a971c086729c5b00",
+              "span_id": "0ca66771a38eb48c",
+              "order_id": "ord_74BJ49",
+              "payment_id": "pay_f2e558f9cd",
+              "amount": 220.94
+            }
+          },
+          {
+            "pattern": "payment info: webhook received",
+            "count": 11,
+            "previous_window": 3,
+            "new": false,
+            "example": {
+              "ts": "2026-11-20T11:20:03.664Z",
+              "service": "payment",
+              "level": "info",
+              "msg": "webhook received",
+              "trace_id": "e97c40b0807f10a70cfab15c3ea193fc",
+              "span_id": "9fc52e3a620b33e2",
+              "status": 200,
+              "event_type": "payment_intent.succeeded",
+              "payment_id": "pay_f2e558f9cd",
+              "order_id": "ord_74BJ49"
+            }
+          },
+          {
+            "pattern": "payment info: payment needs #-D Secure, waiting for customer",
+            "count": 1,
+            "previous_window": 0,
+            "new": true,
+            "example": {
+              "ts": "2026-11-20T11:26:17.786Z",
+              "service": "payment",
+              "level": "info",
+              "msg": "payment needs 3-D Secure, waiting for customer",
+              "trace_id": "479c4343eedd86f369d4d8b78d700f0b",
+              "span_id": "b195a43e0032d522",
+              "order_id": "ord_MB8THH",
+              "payment_id": "pay_416ba1a899",
+              "amount": 189.9,
+              "intent_status": "requires_action",
+              "next_action": "redirect_to_url"
+            }
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t7",
+      "tool": "third_party_health",
+      "args": {
+        "provider": "stripe",
+        "from": "2026-11-20T11:00:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "provider": "stripe",
+        "window": {
+          "from": "2026-11-20T11:00:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "metrics": {
+          "third_party_requests_per_min": {
+            "unit": "count",
+            "last": 30,
+            "min": 21,
+            "max": 46,
+            "max_at": "2026-11-20T11:14:00.000Z",
+            "avg": 30.18,
+            "normal": 24
+          },
+          "third_party_error_rate": {
+            "unit": "%",
+            "last": 0,
+            "min": 0,
+            "max": 2.44,
+            "max_at": "2026-11-20T11:08:00.000Z",
+            "avg": 0.04,
+            "normal": 0
+          },
+          "third_party_latency_p95_ms": {
+            "unit": "ms",
+            "last": 9233.07,
+            "min": 299.7,
+            "max": 9791.06,
+            "max_at": "2026-11-20T11:57:00.000Z",
+            "avg": 6378.98,
+            "normal": 371.6
+          },
+          "webhooks_received_per_min": {
+            "unit": "count",
+            "last": 15,
+            "min": 0,
+            "max": 43,
+            "max_at": "2026-11-20T11:00:00.000Z",
+            "avg": 17.22,
+            "normal": 22
+          },
+          "webhook_bad_signatures_per_min": {
+            "unit": "count",
+            "last": 0,
+            "min": 0,
+            "max": 0,
+            "max_at": "2026-11-20T11:00:00.000Z",
+            "avg": 0,
+            "normal": 0
+          }
+        },
+        "error_log_count": 191,
+        "error_log_samples": [
+          {
+            "ts": "2026-11-20T11:20:38.017Z",
+            "service": "payment",
+            "level": "error",
+            "msg": "failed to parse stripe response",
+            "order_id": "ord_G4Z984",
+            "payment_id": "pay_415ac225a0",
+            "stripe_latency_ms": 6812,
+            "error": "unexpected end of JSON input"
+          },
+          {
+            "ts": "2026-11-20T11:20:45.644Z",
+            "service": "payment",
+            "level": "error",
+            "msg": "failed to parse stripe response",
+            "order_id": "ord_N8E33F",
+            "payment_id": "pay_d94adbda76",
+            "stripe_latency_ms": 8176,
+            "error": "unexpected end of JSON input"
+          },
+          {
+            "ts": "2026-11-20T11:20:47.618Z",
+            "service": "payment",
+            "level": "error",
+            "msg": "failed to parse stripe response",
+            "order_id": "ord_398MK5",
+            "payment_id": "pay_b9a8a03248",
+            "stripe_latency_ms": 5138,
+            "error": "unexpected end of JSON input"
+          },
+          {
+            "ts": "2026-11-20T11:20:49.815Z",
+            "service": "payment",
+            "level": "error",
+            "msg": "failed to parse stripe response",
+            "order_id": "ord_S5MN79",
+            "payment_id": "pay_c6a41523ab",
+            "stripe_latency_ms": 9721,
+            "error": "unexpected end of JSON input"
+          },
+          {
+            "ts": "2026-11-20T11:21:09.874Z",
+            "service": "payment",
+            "level": "error",
+            "msg": "failed to parse stripe response",
+            "order_id": "ord_C28D2K",
+            "payment_id": "pay_0aea7141af",
+            "stripe_latency_ms": 6907,
+            "error": "unexpected end of JSON input"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t8",
+      "tool": "top_endpoints",
+      "args": {
+        "service": "order",
+        "by": "latency",
+        "from": "2026-11-20T11:18:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "service": "order",
+        "by": "latency",
+        "note": "Counts come from sampled traces, not all requests.",
+        "endpoints": [
+          {
+            "route": "POST /checkout",
+            "sampled_requests": 30,
+            "errors": 18,
+            "error_pct": 60,
+            "normal_error_pct": 0.1,
+            "p95_ms": 9556.51,
+            "normal_p95_ms": 430,
+            "sample_error_trace": "aca55dbebae747f12388b76923472fac"
+          },
+          {
+            "route": "GET /orders/:id",
+            "sampled_requests": 6,
+            "errors": 0,
+            "error_pct": 0,
+            "normal_error_pct": 0.03,
+            "p95_ms": 7.75,
+            "normal_p95_ms": 22,
+            "sample_error_trace": null
+          }
+        ]
+      },
+      "error": null
+    }
+  ],
+  "final_output": "**Cause: Stripe is degraded.** From 11:20 UTC, Stripe POST /v1/payment_intents is slow and often returns HTTP 200 with an empty body. Payment cannot parse the empty body and returns 502, so Order fails the checkout.\n\n**Evidence**\n- third_party_health(stripe), 11:00 to 12:00: p95 latency reaches 9,791 ms (normal about 372 ms). The trace below shows one Stripe call of 6.8 s at 11:22. The Stripe error rate is 0%, because the responses are HTTP 200. That is why ThirdPartyErrors does not fire.\n- Trace aca55dbebae747f12388b76923472fac (order ord_8A9BF2): the stripe POST /v1/payment_intents span takes 6.8 s and returns 200 with body_bytes=0. Then parse stripe response fails with unexpected end of JSON input. Payment returns 502, Order returns 502, and Order releases the reserved stock. The Order spans themselves take a few milliseconds.\n- log_patterns(payment), 11:20 to 12:00: a new error, failed to parse stripe response, 191 times (0 in the 40 minutes before), with error unexpected end of JSON input and stripe_latency_ms of 5 to 10 s.\n\n**Not the cause: the Order v4.12.0 deploy at 11:16** (gift message field). The time is spent in the Payment to Stripe call, the new error is in Payment, which was not deployed, and GET /orders/:id on the new version has a p95 of 8 ms. Do not roll it back.\n\n**Impact (11:20 to 12:00 UTC, still ongoing)**\n- Checkout success is 38.7% of 1,182 attempts, and the lowest minute is 22%. About 725 checkouts did not succeed.\n- In the sampled failed checkouts, customers wait 5 to 10 s, then get a 502 error.\n- The fault is still active at 12:00. CheckoutSuccessLow, PaymentSuccessLow, and the Payment and Order error and latency alerts are still firing.\n\n**Do now**\n1. Check the Stripe status page and open a Stripe support ticket with the request IDs and times (from 11:20 UTC).\n2. Do not roll back Order.\n3. Watch checkout_success_rate and Stripe p95 latency until they return to normal. Tell support that customers can try again later.\n4. Later: make Payment treat an empty Stripe body as a fast, clear error, use a shorter timeout, and alert on Stripe latency and on parse errors.\n\nNot related: business_kpis shows at most 1 order stuck in PENDING for more than 15 minutes, below the alert limit of 5."
+}

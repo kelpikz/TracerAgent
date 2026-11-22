@@ -1,0 +1,25 @@
+{
+  "id": "delivery-schema-break",
+  "title": "Delivery stops booking shipments after an Order deploy",
+  "description": "Find why Delivery lag grows. An Order deploy changes the order.paid schema and the Delivery consumer cannot parse it.",
+  "scenario": "delivery-schema-break",
+  "incidents": [
+    "order_paid_schema_v2"
+  ],
+  "noise": [
+    "carrier_maintenance",
+    "notification_oom",
+    "dlq_deleted_users",
+    "stuck_3ds",
+    "cron_jobs",
+    "price_scraper"
+  ],
+  "input": "KafkaLagHigh [serious] at 2026-11-20 11:33 UTC\nkafka_consumer_lag{group=delivery} 1276 > 1000 for 10m\n\nCurrent time: 2026-11-20 12:00 UTC.\nFind the cause, tell me the customer impact, and tell me what we should do now.",
+  "tags": [
+    "delivery",
+    "kafka",
+    "deploy",
+    "schema-change"
+  ],
+  "timeout_s": 600
+}

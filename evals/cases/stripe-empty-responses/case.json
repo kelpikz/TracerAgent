@@ -1,0 +1,23 @@
+{
+  "id": "stripe-empty-responses",
+  "title": "Checkout fails while Stripe returns empty responses",
+  "description": "Find why checkout fails. Stripe is slow and sends empty HTTP 200 responses, and an Order deploy goes live 4 minutes before the fault.",
+  "scenario": "stripe-empty-responses",
+  "incidents": [
+    "stripe_empty_responses"
+  ],
+  "noise": [
+    "stuck_3ds",
+    "dlq_deleted_users",
+    "price_scraper",
+    "catalog_gc"
+  ],
+  "input": "CheckoutSuccessLow [critical] at 2026-11-20 11:29 UTC\ncheckout_success_rate 41.7% < 90% for 10m\n\nCurrent time: 2026-11-20 12:00 UTC.\nFind the cause, tell me the customer impact, and tell me what we should do now.",
+  "tags": [
+    "payment",
+    "stripe",
+    "third-party",
+    "deploy-dead-end"
+  ],
+  "timeout_s": 600
+}

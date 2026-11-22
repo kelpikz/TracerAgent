@@ -1,0 +1,710 @@
+{
+  "steps": [
+    {
+      "type": "tool_call",
+      "tool": "top_endpoints",
+      "args": {
+        "service": "catalog",
+        "by": "latency",
+        "from": "2026-11-20T11:12:00Z",
+        "to": "2026-11-20T12:00:00Z",
+        "limit": 4
+      },
+      "result": {
+        "service": "catalog",
+        "by": "latency",
+        "note": "Counts come from sampled traces, not all requests.",
+        "endpoints": [
+          {
+            "route": "GET /products",
+            "sampled_requests": 109,
+            "errors": 0,
+            "error_pct": 0,
+            "normal_error_pct": 0.03,
+            "p95_ms": 402.65,
+            "normal_p95_ms": 62,
+            "sample_error_trace": null
+          },
+          {
+            "route": "PUT /admin/products/:id",
+            "sampled_requests": 2,
+            "errors": 0,
+            "error_pct": 0,
+            "normal_error_pct": 0,
+            "p95_ms": 10.54,
+            "normal_p95_ms": 18,
+            "sample_error_trace": null
+          },
+          {
+            "route": "POST /stock/reserve",
+            "sampled_requests": 6,
+            "errors": 0,
+            "error_pct": 0,
+            "normal_error_pct": 0.05,
+            "p95_ms": 9.22,
+            "normal_p95_ms": 14,
+            "sample_error_trace": null
+          },
+          {
+            "route": "GET /products/:id",
+            "sampled_requests": 25,
+            "errors": 0,
+            "error_pct": 0,
+            "normal_error_pct": 0.03,
+            "p95_ms": 8.87,
+            "normal_p95_ms": 52,
+            "sample_error_trace": null
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "find_traces",
+      "args": {
+        "service": "catalog",
+        "route": "GET /products",
+        "min_duration_ms": 200,
+        "limit": 2,
+        "from": "2026-11-20T11:12:00Z",
+        "to": "2026-11-20T11:17:00Z"
+      },
+      "result": {
+        "count": 10,
+        "traces": [
+          {
+            "trace_id": "0410e5e2d3e8b68bb20ee077fe0c1c24",
+            "start": "2026-11-20T11:12:30.156Z",
+            "root": "GET /products",
+            "status": "ok",
+            "http_status": 200,
+            "total_ms": 328.58,
+            "services": [
+              "catalog",
+              "gateway"
+            ],
+            "failed_span": null
+          },
+          {
+            "trace_id": "f9c48783362b912ce5b57e0f8471046a",
+            "start": "2026-11-20T11:12:44.555Z",
+            "root": "GET /products",
+            "status": "ok",
+            "http_status": 200,
+            "total_ms": 329.49,
+            "services": [
+              "catalog",
+              "gateway"
+            ],
+            "failed_span": null
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "get_trace",
+      "args": {
+        "trace_id": "0410e5e2d3e8b68bb20ee077fe0c1c24"
+      },
+      "result": {
+        "trace_id": "0410e5e2d3e8b68bb20ee077fe0c1c24",
+        "root": "GET /products",
+        "start": "2026-11-20T11:12:30.156Z",
+        "status": "ok",
+        "http_status": 200,
+        "total_ms": 328.58,
+        "spans": [
+          {
+            "id": "31e7fd6a0fa480c2",
+            "parent": null,
+            "service": "gateway",
+            "name": "GET /products",
+            "kind": "server",
+            "offset_ms": 0,
+            "duration_ms": 328.58,
+            "status": "ok",
+            "attrs": {
+              "http_status": 200
+            }
+          },
+          {
+            "id": "41b98c91ce979fe0",
+            "parent": "31e7fd6a0fa480c2",
+            "service": "catalog",
+            "name": "GET /products",
+            "kind": "server",
+            "offset_ms": 1.13,
+            "duration_ms": 326.34,
+            "status": "ok",
+            "attrs": {
+              "http_status": 200,
+              "db": "catalog",
+              "target": "catalog-replica",
+              "duration_ms": 324,
+              "category": "shoes",
+              "qualifying_rows": 122400
+            }
+          },
+          {
+            "id": "90cc5cb5d4ce27f5",
+            "parent": "41b98c91ce979fe0",
+            "service": "catalog",
+            "name": "pg SELECT products (replica)",
+            "kind": "client",
+            "offset_ms": 2.16,
+            "duration_ms": 323.67,
+            "status": "ok",
+            "attrs": {
+              "db": "catalog-replica",
+              "order_by": "supplier_rank NULLS LAST, id",
+              "plan": "Seq Scan -> top-N heapsort",
+              "version": "v1.9.0",
+              "qualifying_rows": 122400,
+              "rows_returned": 24
+            }
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "list_changes",
+      "args": {
+        "service": "catalog",
+        "from": "2026-11-20T11:04:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "window": {
+          "from": "2026-11-20T11:04:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "changes": [
+          {
+            "type": "deploy",
+            "ts": "2026-11-20T11:12:00.000Z",
+            "service": "catalog",
+            "summary": "Product listing merchandising rollout",
+            "by": "ci-bot",
+            "version": "v1.9.0",
+            "previous": "v1.8.2",
+            "commit": "65e181a"
+          }
+        ],
+        "last_change_before_window": {
+          "type": "deploy",
+          "ts": "2026-11-19T14:05:00.000Z",
+          "service": "catalog",
+          "version": "v1.8.2",
+          "previous": "v1.8.1",
+          "summary": "Show delivery estimate on product page",
+          "by": "ci-bot",
+          "commit": "3332122"
+        }
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "db_health",
+      "args": {
+        "db": "catalog",
+        "from": "2026-11-20T11:12:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "db": "catalog",
+        "window": {
+          "from": "2026-11-20T11:12:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "metrics": {
+          "pg_up": {
+            "unit": "bool",
+            "last": 1,
+            "min": 1,
+            "max": 1,
+            "max_at": "2026-11-20T11:12:00.000Z",
+            "avg": 1,
+            "normal": 1
+          },
+          "pg_query_p95_ms": {
+            "unit": "ms",
+            "last": 309.1,
+            "min": 296.8,
+            "max": 407.3,
+            "max_at": "2026-11-20T11:20:00.000Z",
+            "avg": 349.76,
+            "normal": 5.27
+          },
+          "pg_connections_used": {
+            "unit": "count",
+            "last": 27,
+            "min": 22,
+            "max": 32,
+            "max_at": "2026-11-20T11:21:00.000Z",
+            "avg": 26.38,
+            "normal": 24
+          },
+          "pg_disk_used_pct": {
+            "unit": "%",
+            "last": 38.09,
+            "min": 38.07,
+            "max": 38.09,
+            "max_at": "2026-11-20T11:59:00.000Z",
+            "avg": 38.08,
+            "normal": 38.04
+          },
+          "pg_slow_queries_per_min": {
+            "unit": "count",
+            "last": 316,
+            "min": 278,
+            "max": 345,
+            "max_at": "2026-11-20T11:44:00.000Z",
+            "avg": 316.13,
+            "normal": 0
+          },
+          "pg_replication_lag_s": {
+            "unit": "s",
+            "last": 0.49,
+            "min": 0.05,
+            "max": 0.96,
+            "max_at": "2026-11-20T11:26:00.000Z",
+            "avg": 0.51,
+            "normal": 0.46
+          }
+        },
+        "slow_query_samples": [
+          {
+            "ts": "2026-11-20T11:12:30.484Z",
+            "service": "catalog",
+            "level": "warn",
+            "msg": "slow product list query",
+            "trace_id": "0410e5e2d3e8b68bb20ee077fe0c1c24",
+            "span_id": "41b98c91ce979fe0",
+            "status": 200,
+            "db": "catalog",
+            "target": "catalog-replica",
+            "duration_ms": 324,
+            "category": "shoes",
+            "qualifying_rows": 122400
+          },
+          {
+            "ts": "2026-11-20T11:12:44.884Z",
+            "service": "catalog",
+            "level": "warn",
+            "msg": "slow product list query",
+            "trace_id": "f9c48783362b912ce5b57e0f8471046a",
+            "span_id": "5fd845552d1d6b6b",
+            "status": 200,
+            "db": "catalog",
+            "target": "catalog-replica",
+            "duration_ms": 324,
+            "category": "jackets",
+            "qualifying_rows": 87500
+          },
+          {
+            "ts": "2026-11-20T11:13:26.148Z",
+            "service": "catalog",
+            "level": "warn",
+            "msg": "slow product list query",
+            "trace_id": "0f25498d1ebe8e1dbb697efb963c551e",
+            "span_id": "08f2458d726179a6",
+            "status": 200,
+            "db": "catalog",
+            "target": "catalog-replica",
+            "duration_ms": 375,
+            "category": "shoes",
+            "qualifying_rows": 122400
+          },
+          {
+            "ts": "2026-11-20T11:13:32.102Z",
+            "service": "catalog",
+            "level": "warn",
+            "msg": "slow product list query",
+            "trace_id": "812b14cd2350a5a82a47b45ba1254234",
+            "span_id": "30680920a2b2b07e",
+            "status": 200,
+            "db": "catalog",
+            "target": "catalog-replica",
+            "duration_ms": 375,
+            "category": "jackets",
+            "qualifying_rows": 87500
+          },
+          {
+            "ts": "2026-11-20T11:14:17.034Z",
+            "service": "catalog",
+            "level": "warn",
+            "msg": "slow product list query",
+            "trace_id": "d663a37d2406832e86bd6b25606dc7ac",
+            "span_id": "f2527420129889ed",
+            "status": 200,
+            "db": "catalog",
+            "target": "catalog-replica",
+            "duration_ms": 321,
+            "category": "jackets",
+            "qualifying_rows": 87500
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "business_kpis",
+      "args": {
+        "from": "2026-11-20T11:12:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "window": {
+          "from": "2026-11-20T11:12:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "checkout_attempts": 1442,
+        "checkout_success_pct": 96.74,
+        "lowest_minute_checkout_success_pct": 85.71,
+        "lowest_minute_payment_success_pct": 85.71,
+        "max_orders_stuck_pending_15m": 0,
+        "metrics": {
+          "checkout_attempts_per_min": {
+            "unit": "count",
+            "last": 30,
+            "min": 21,
+            "max": 46,
+            "max_at": "2026-11-20T11:14:00.000Z",
+            "avg": 30.04,
+            "normal": 24
+          },
+          "checkout_success_rate": {
+            "unit": "%",
+            "last": 96.67,
+            "min": 85.71,
+            "max": 100,
+            "max_at": "2026-11-20T11:15:00.000Z",
+            "avg": 96.77,
+            "normal": 100
+          },
+          "payment_success_rate": {
+            "unit": "%",
+            "last": 96.67,
+            "min": 85.71,
+            "max": 100,
+            "max_at": "2026-11-20T11:15:00.000Z",
+            "avg": 97.15,
+            "normal": 100
+          },
+          "orders_pending": {
+            "unit": "count",
+            "last": 3,
+            "min": 0,
+            "max": 7,
+            "max_at": "2026-11-20T11:42:00.000Z",
+            "avg": 2.56,
+            "normal": 2
+          },
+          "orders_stuck_pending_15m": {
+            "unit": "count",
+            "last": 0,
+            "min": 0,
+            "max": 0,
+            "max_at": "2026-11-20T11:12:00.000Z",
+            "avg": 0,
+            "normal": 0
+          },
+          "order_outbox_unpublished": {
+            "unit": "count",
+            "last": 1,
+            "min": 0,
+            "max": 2,
+            "max_at": "2026-11-20T11:58:00.000Z",
+            "avg": 0.33,
+            "normal": 0
+          },
+          "emails_failed_per_min": {
+            "unit": "count",
+            "last": 0,
+            "min": 0,
+            "max": 0,
+            "max_at": "2026-11-20T11:12:00.000Z",
+            "avg": 0,
+            "normal": 0
+          },
+          "auth_login_success_rate": {
+            "unit": "%",
+            "last": 92.65,
+            "min": 80.77,
+            "max": 100,
+            "max_at": "2026-11-20T11:33:00.000Z",
+            "avg": 92.85,
+            "normal": 93.33
+          }
+        }
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "get_service_health",
+      "args": {
+        "service": "catalog",
+        "from": "2026-11-20T11:12:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "service": "catalog",
+        "window": {
+          "from": "2026-11-20T11:12:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "healthy": false,
+        "problems": [
+          "http_latency_p95_ms max 431.7 ms (normal 62.1) since 2026-11-20T11:12:00.000Z",
+          "http_latency_p99_ms max 757.49 ms (normal 115.7) since 2026-11-20T11:12:00.000Z"
+        ],
+        "signals": {
+          "http_requests_per_second": {
+            "unit": "req/s",
+            "last": 54.8,
+            "min": 48.08,
+            "max": 59.83,
+            "max_at": "2026-11-20T11:44:00.000Z",
+            "avg": 54.84,
+            "normal": 45.65
+          },
+          "http_error_rate": {
+            "unit": "%",
+            "last": 0.15,
+            "min": 0,
+            "max": 0.15,
+            "max_at": "2026-11-20T11:59:00.000Z",
+            "avg": 0.04,
+            "normal": 0.03
+          },
+          "http_latency_p95_ms": {
+            "unit": "ms",
+            "last": 327.7,
+            "min": 314.6,
+            "max": 431.7,
+            "max_at": "2026-11-20T11:20:00.000Z",
+            "avg": 370.76,
+            "normal": 62.1
+          },
+          "http_latency_p99_ms": {
+            "unit": "ms",
+            "last": 395.7,
+            "min": 379.9,
+            "max": 757.49,
+            "max_at": "2026-11-20T11:37:00.000Z",
+            "avg": 453.95,
+            "normal": 115.7
+          },
+          "cpu_pct": {
+            "unit": "%",
+            "last": 44.1,
+            "min": 40.5,
+            "max": 54.5,
+            "max_at": "2026-11-20T11:31:00.000Z",
+            "avg": 47.38,
+            "normal": 41.8
+          },
+          "memory_mb": {
+            "unit": "MB",
+            "last": 331.1,
+            "min": 325.4,
+            "max": 331.7,
+            "max_at": "2026-11-20T11:52:00.000Z",
+            "avg": 328.51,
+            "normal": 317.8
+          },
+          "pod_restarts": {
+            "unit": "count",
+            "last": 0,
+            "min": 0,
+            "max": 0,
+            "max_at": "2026-11-20T11:12:00.000Z",
+            "avg": 0,
+            "normal": 0
+          },
+          "pods_ready": {
+            "unit": "count",
+            "last": 3,
+            "min": 3,
+            "max": 3,
+            "max_at": "2026-11-20T11:12:00.000Z",
+            "avg": 3,
+            "normal": 3
+          }
+        }
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "compare_windows",
+      "args": {
+        "metric": "checkout_success_rate",
+        "a": {
+          "from": "2026-11-20T10:24:00Z",
+          "to": "2026-11-20T11:11:00Z"
+        },
+        "b": {
+          "from": "2026-11-20T11:12:00Z",
+          "to": "2026-11-20T11:59:00Z"
+        }
+      },
+      "result": {
+        "metric": "checkout_success_rate",
+        "labels": {},
+        "unit": "%",
+        "a": {
+          "from": "2026-11-20T10:24:00Z",
+          "to": "2026-11-20T11:11:00Z",
+          "avg": 96.48,
+          "max": 100,
+          "p95": 100
+        },
+        "b": {
+          "from": "2026-11-20T11:12:00Z",
+          "to": "2026-11-20T11:59:00Z",
+          "avg": 96.77,
+          "max": 100,
+          "p95": 100
+        },
+        "avg_change_pct": 0.3
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "get_service_health",
+      "args": {
+        "service": "gateway",
+        "from": "2026-11-20T11:10:00Z",
+        "to": "2026-11-20T11:59:00Z"
+      },
+      "result": {
+        "service": "gateway",
+        "window": {
+          "from": "2026-11-20T11:10:00.000Z",
+          "to": "2026-11-20T11:59:00.000Z"
+        },
+        "healthy": false,
+        "problems": [
+          "http_latency_p95_ms max 411.3 ms (normal 73.1) since 2026-11-20T11:12:00.000Z"
+        ],
+        "signals": {
+          "http_requests_per_second": {
+            "unit": "req/s",
+            "last": 92.85,
+            "min": 86.54,
+            "max": 101.61,
+            "max_at": "2026-11-20T11:44:00.000Z",
+            "avg": 95.01,
+            "normal": 79.3
+          },
+          "http_error_rate": {
+            "unit": "%",
+            "last": 0.11,
+            "min": 0,
+            "max": 0.12,
+            "max_at": "2026-11-20T11:31:00.000Z",
+            "avg": 0.05,
+            "normal": 0.05
+          },
+          "http_latency_p95_ms": {
+            "unit": "ms",
+            "last": 312.2,
+            "min": 77.7,
+            "max": 411.3,
+            "max_at": "2026-11-20T11:20:00.000Z",
+            "avg": 342.4,
+            "normal": 73.1
+          }
+        }
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "search_logs",
+      "args": {
+        "service": "catalog",
+        "text": "GC pause",
+        "from": "2026-11-20T11:00:00Z",
+        "to": "2026-11-20T12:00:00Z",
+        "limit": 2
+      },
+      "result": {
+        "count": 1,
+        "shown": 1,
+        "samples": [
+          {
+            "ts": "2026-11-20T11:37:51.988Z",
+            "service": "catalog",
+            "level": "warn",
+            "msg": "GC pause",
+            "gc": "full",
+            "pause_ms": 1510,
+            "heap_used_pct": 92.3
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "list_alerts",
+      "args": {
+        "state": "firing",
+        "from": "2026-11-20T11:12:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "now": "2026-11-20T12:00:00.000Z",
+        "state": "firing",
+        "matches": [
+          {
+            "name": "ServiceLatencyHigh",
+            "severity": "warning",
+            "fired_at": "2026-11-20T11:22:00.000Z",
+            "resolved_at": null,
+            "summary": "http_latency_p95_ms{service=gateway} 385.9ms > 2x normal for 10m"
+          },
+          {
+            "name": "ServiceLatencyHigh",
+            "severity": "warning",
+            "fired_at": "2026-11-20T11:22:00.000Z",
+            "resolved_at": null,
+            "summary": "http_latency_p95_ms{service=catalog} 405.0ms > 2x normal for 10m"
+          }
+        ],
+        "rules": [
+          "CheckoutSuccessLow: checkout_success_rate < 90% for 10m [critical]",
+          "OrdersStuckPending: orders_stuck_pending_15m > 5 [critical]",
+          "PaymentSuccessLow: payment_success_rate < 90% for 10m [critical]",
+          "ServiceErrorRateHigh: http_error_rate > 2% for 5m (any service) [serious]",
+          "ServiceLatencyHigh: http_latency_p95_ms > 2x normal for 10m [warning]",
+          "PodRestarts: pod_restarts > 3 in 15m [serious]",
+          "PostgresDown: pg_up == 0 [critical]",
+          "PostgresConnectionsHigh: pg_connections_used > 80% of max [serious]",
+          "PostgresDiskHigh: pg_disk_used_pct > 80 [warning]",
+          "ReplicaLagHigh: pg_replication_lag_s > 30 for 5m [serious]",
+          "RedisMemoryHigh: redis_memory_used_mb > 85% of max [warning]",
+          "KafkaLagHigh: kafka_consumer_lag > 1000 for 10m [serious]",
+          "DlqGrowing: kafka_dlq_size grows in 15m [warning]",
+          "ThirdPartyErrors: third_party_error_rate > 5% for 5m [serious]",
+          "BadWebhookSignatures: webhook_bad_signatures_per_min > 10 [warning]",
+          "EmailsFailing: emails_failed_per_min > 5 for 10m [warning]",
+          "NodeDown: node_up == 0 [serious]"
+        ]
+      },
+      "error": null
+    }
+  ],
+  "final_output": "## Root cause\nCatalog v1.9.0 rolled out at 11:12 UTC and changed the default list sort to supplier_rank. For large categories, the read replica does a sequential scan and top-N sort before returning the list.\n\n## Evidence\nCatalog endpoint samples show slow GET /products. Trace 0410e5e2d3e8b68bb20ee077fe0c1c24 spends most of its time in the replica SELECT and shows the sort plan. Replica lag stayed near baseline. Catalog p95 stayed between about 315 and 432 ms through noon. The slow list reads drove up gateway p95 from 11:12. The gateway latency warning fired at 11:22 after 10 minutes and was still firing at noon.\n\n## Customer impact\nLarge product lists still return HTTP 200 but load much more slowly. Product detail p95 stayed low. The 11:37 GC pause came after the sustained p95 increase. Checkout success averaged close to the immediately preceding window. The available evidence supports a browsing slowdown, and it gives no reason to attribute isolated payment dips to this sort change.\n\n## Next steps\nRoll back Catalog to v1.8.2 or revert the default sort now. Check that product list p95 and replica query latency return to normal. Test the query plan on large categories before enabling the sort again."
+}

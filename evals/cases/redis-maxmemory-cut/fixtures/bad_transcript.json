@@ -1,0 +1,288 @@
+{
+  "agent": {
+    "name": "fixture-bad",
+    "model": null
+  },
+  "input": "ServiceErrorRateHigh [serious] at 2026-11-20 11:15 UTC\nhttp_error_rate{service=cart} 25.2% > 2% for 5m\n\nCurrent time: 2026-11-20 12:00 UTC.\nFind the cause, tell me the customer impact, and tell me what we should do now.",
+  "steps": [
+    {
+      "type": "tool_call",
+      "id": "t1",
+      "tool": "list_alerts",
+      "args": {
+        "state": "firing"
+      },
+      "result": {
+        "now": "2026-11-20T12:00:00.000Z",
+        "state": "firing",
+        "matches": [
+          {
+            "name": "ServiceErrorRateHigh",
+            "severity": "serious",
+            "fired_at": "2026-11-20T11:15:00.000Z",
+            "resolved_at": null,
+            "summary": "http_error_rate{service=cart} 25.2% > 2% for 5m"
+          },
+          {
+            "name": "ServiceErrorRateHigh",
+            "severity": "serious",
+            "fired_at": "2026-11-20T11:15:00.000Z",
+            "resolved_at": null,
+            "summary": "http_error_rate{service=gateway} 4.6% > 2% for 5m"
+          }
+        ],
+        "rules": [
+          "CheckoutSuccessLow: checkout_success_rate < 90% for 10m [critical]",
+          "OrdersStuckPending: orders_stuck_pending_15m > 5 [critical]",
+          "PaymentSuccessLow: payment_success_rate < 90% for 10m [critical]",
+          "ServiceErrorRateHigh: http_error_rate > 2% for 5m (any service) [serious]",
+          "ServiceLatencyHigh: http_latency_p95_ms > 2x normal for 10m [warning]",
+          "PodRestarts: pod_restarts > 3 in 15m [serious]",
+          "PostgresDown: pg_up == 0 [critical]",
+          "PostgresConnectionsHigh: pg_connections_used > 80% of max [serious]",
+          "PostgresDiskHigh: pg_disk_used_pct > 80 [warning]",
+          "ReplicaLagHigh: pg_replication_lag_s > 30 for 5m [serious]",
+          "RedisMemoryHigh: redis_memory_used_mb > 85% of max [warning]",
+          "KafkaLagHigh: kafka_consumer_lag > 1000 for 10m [serious]",
+          "DlqGrowing: kafka_dlq_size grows in 15m [warning]",
+          "ThirdPartyErrors: third_party_error_rate > 5% for 5m [serious]",
+          "BadWebhookSignatures: webhook_bad_signatures_per_min > 10 [warning]",
+          "EmailsFailing: emails_failed_per_min > 5 for 10m [warning]",
+          "NodeDown: node_up == 0 [serious]"
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t2",
+      "tool": "get_service_health",
+      "args": {
+        "service": "cart",
+        "from": "2026-11-20T11:00:00Z",
+        "to": "2026-11-20T12:00:00Z"
+      },
+      "result": {
+        "service": "cart",
+        "window": {
+          "from": "2026-11-20T11:00:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "healthy": false,
+        "problems": [
+          "http_error_rate max 39.78% (normal 0) since 2026-11-20T11:10:00.000Z"
+        ],
+        "signals": {
+          "http_requests_per_second": {
+            "unit": "req/s",
+            "last": 16.36,
+            "min": 15.86,
+            "max": 20.34,
+            "max_at": "2026-11-20T11:33:00.000Z",
+            "avg": 17.93,
+            "normal": 14.83
+          },
+          "http_error_rate": {
+            "unit": "%",
+            "last": 38.92,
+            "min": 0,
+            "max": 39.78,
+            "max_at": "2026-11-20T11:38:00.000Z",
+            "avg": 29.49,
+            "normal": 0
+          },
+          "http_latency_p95_ms": {
+            "unit": "ms",
+            "last": 14.9,
+            "min": 13.2,
+            "max": 17,
+            "max_at": "2026-11-20T11:16:00.000Z",
+            "avg": 15.17,
+            "normal": 14.6
+          },
+          "http_latency_p99_ms": {
+            "unit": "ms",
+            "last": 26.3,
+            "min": 22.7,
+            "max": 34.4,
+            "max_at": "2026-11-20T11:39:00.000Z",
+            "avg": 27.84,
+            "normal": 26.8
+          },
+          "cpu_pct": {
+            "unit": "%",
+            "last": 21.9,
+            "min": 18.3,
+            "max": 25.8,
+            "max_at": "2026-11-20T11:21:00.000Z",
+            "avg": 21.86,
+            "normal": 19.1
+          },
+          "memory_mb": {
+            "unit": "MB",
+            "last": 150.3,
+            "min": 142,
+            "max": 150.3,
+            "max_at": "2026-11-20T11:59:00.000Z",
+            "avg": 145.93,
+            "normal": 144.9
+          },
+          "pod_restarts": {
+            "unit": "count",
+            "last": 0,
+            "min": 0,
+            "max": 0,
+            "max_at": "2026-11-20T11:00:00.000Z",
+            "avg": 0,
+            "normal": 0
+          },
+          "pods_ready": {
+            "unit": "count",
+            "last": 2,
+            "min": 2,
+            "max": 2,
+            "max_at": "2026-11-20T11:00:00.000Z",
+            "avg": 2,
+            "normal": 2
+          }
+        }
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t3",
+      "tool": "log_patterns",
+      "args": {
+        "service": "cart",
+        "from": "2026-11-20T11:00:00Z",
+        "to": "2026-11-20T12:00:00Z",
+        "limit": 5
+      },
+      "result": {
+        "window": {
+          "from": "2026-11-20T11:00:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "patterns": [
+          {
+            "pattern": "cart error: add to cart failed",
+            "count": 85,
+            "previous_window": 0,
+            "new": true,
+            "example": {
+              "ts": "2026-11-20T11:10:02.445Z",
+              "service": "cart",
+              "level": "error",
+              "msg": "add to cart failed",
+              "trace_id": "f3e5c8692483e156ff7393b805e5e805",
+              "span_id": "b5fd1d940c6910c2",
+              "status": 500,
+              "product_id": "p_3426",
+              "qty": 3,
+              "error": "OOM command not allowed when used memory > 'maxmemory'."
+            }
+          },
+          {
+            "pattern": "cart info: item removed from cart",
+            "count": 1,
+            "previous_window": 0,
+            "new": true,
+            "example": {
+              "ts": "2026-11-20T11:51:18.579Z",
+              "service": "cart",
+              "level": "info",
+              "msg": "item removed from cart",
+              "trace_id": "fe8a173c72f106f48078a09c30d92a46",
+              "span_id": "d689c9ae3d82b7c2",
+              "status": 200,
+              "product_id": "p_4653"
+            }
+          },
+          {
+            "pattern": "cart info: item added to cart",
+            "count": 4,
+            "previous_window": 6,
+            "new": false,
+            "example": {
+              "ts": "2026-11-20T11:03:34.814Z",
+              "service": "cart",
+              "level": "info",
+              "msg": "item added to cart",
+              "trace_id": "9838b5297f78f7018b2091189fbdf0be",
+              "span_id": "2a4ca4794a9956f8",
+              "status": 201,
+              "product_id": "p_1283",
+              "qty": 2
+            }
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t4",
+      "tool": "list_changes",
+      "args": {
+        "service": "cart"
+      },
+      "result": {
+        "window": {
+          "from": "2026-11-20T11:00:00.000Z",
+          "to": "2026-11-20T12:00:00.000Z"
+        },
+        "changes": [],
+        "last_change_before_window": {
+          "type": "deploy",
+          "ts": "2026-11-20T09:40:00.000Z",
+          "service": "cart",
+          "version": "v2.1.0",
+          "previous": "v2.0.7",
+          "summary": "Upgrade Redis client library",
+          "by": "ci-bot",
+          "commit": "e2be4fd"
+        }
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "id": "t5",
+      "tool": "compare_windows",
+      "args": {
+        "metric": "cart_errors_per_min",
+        "a": {
+          "from": "2026-11-20T09:00:00Z",
+          "to": "2026-11-20T09:40:00Z"
+        },
+        "b": {
+          "from": "2026-11-20T09:40:00Z",
+          "to": "2026-11-20T12:00:00Z"
+        }
+      },
+      "result": {
+        "metric": "cart_errors_per_min",
+        "labels": {},
+        "unit": "count",
+        "a": {
+          "from": "2026-11-20T09:00:00Z",
+          "to": "2026-11-20T09:40:00Z",
+          "avg": 0.02,
+          "max": 1,
+          "p95": 0
+        },
+        "b": {
+          "from": "2026-11-20T09:40:00Z",
+          "to": "2026-11-20T12:00:00Z",
+          "avg": 136.82,
+          "max": 466,
+          "p95": 443
+        },
+        "avg_change_pct": 684000
+      },
+      "error": null
+    }
+  ],
+  "final_output": "## Root cause\nThe cart v2.1.0 deploy at 09:40 UTC (\"Upgrade Redis client library\") is the cause. After the new Redis client library went live, cart write requests started to fail. The cart logs show \"add to cart failed\" with a Redis OOM error, and the new client probably keeps too much data in Redis. The Redis problem started after this change, and it is the latest change in the list.\n\n## Evidence\n- `ServiceErrorRateHigh` for cart (25.2%) at 11:15 UTC.\n- Cart error rate is up to about 39% in 11:00-12:00. Latency is normal.\n- New log pattern: \"add to cart failed\", error \"OOM command not allowed when used memory > 'maxmemory'\" (first at 11:10).\n- `list_changes` for cart shows the last change: deploy v2.1.0, \"Upgrade Redis client library\", at 09:40.\n- Cart errors per minute: average 0.02 before the deploy (09:00-09:40) and average 137 after it (09:40-12:00). The errors rose after the deploy.\n\n## Customer impact\nCustomers cannot add items to the cart from about 11:10 UTC. The error rate is about 39% for cart. I did not check checkout.\n\n## Next steps\nRoll back cart to v2.0.7. Then check that the cart error rate goes back to normal."
+}

@@ -1,0 +1,407 @@
+{
+  "steps": [
+    {
+      "type": "tool_call",
+      "tool": "top_endpoints",
+      "args": {
+        "service": "gateway",
+        "by": "errors",
+        "from": "2026-11-20T10:29:00Z",
+        "to": "2026-11-20T10:58:00Z",
+        "limit": 3
+      },
+      "result": {
+        "service": "gateway",
+        "by": "errors",
+        "note": "Counts come from sampled traces, not all requests.",
+        "endpoints": [
+          {
+            "route": "POST /auth/refresh",
+            "sampled_requests": 34,
+            "errors": 22,
+            "error_pct": 64.71,
+            "normal_error_pct": null,
+            "p95_ms": 256.68,
+            "normal_p95_ms": null,
+            "sample_error_trace": "0274a30d8af95644fc55d6ea3995f3b3"
+          },
+          {
+            "route": "POST /auth/login",
+            "sampled_requests": 34,
+            "errors": 22,
+            "error_pct": 64.71,
+            "normal_error_pct": null,
+            "p95_ms": 256.67,
+            "normal_p95_ms": null,
+            "sample_error_trace": "8bd0e59997bc08dcff6ae97ad5ea01ee"
+          },
+          {
+            "route": "POST /auth/signup",
+            "sampled_requests": 6,
+            "errors": 5,
+            "error_pct": 83.33,
+            "normal_error_pct": null,
+            "p95_ms": 256.53,
+            "normal_p95_ms": null,
+            "sample_error_trace": "0812a60ae351d23f5135700eb43422e5"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "get_trace",
+      "args": {
+        "trace_id": "8bd0e59997bc08dcff6ae97ad5ea01ee"
+      },
+      "result": {
+        "trace_id": "8bd0e59997bc08dcff6ae97ad5ea01ee",
+        "root": "POST /auth/login",
+        "start": "2026-11-20T10:34:54.767Z",
+        "status": "error",
+        "http_status": 503,
+        "total_ms": 255.39,
+        "spans": [
+          {
+            "id": "c855d6d1eaf8a300",
+            "parent": null,
+            "service": "gateway",
+            "name": "POST /auth/login",
+            "kind": "server",
+            "offset_ms": 0,
+            "duration_ms": 255.39,
+            "status": "error",
+            "attrs": {
+              "http_status": 503
+            }
+          },
+          {
+            "id": "4fdbc25fae537c07",
+            "parent": "c855d6d1eaf8a300",
+            "service": "auth",
+            "name": "POST /auth/login",
+            "kind": "server",
+            "offset_ms": 0.68,
+            "duration_ms": 254.3,
+            "status": "error",
+            "attrs": {
+              "http_status": 503,
+              "pod": "auth-canary",
+              "db": "users"
+            }
+          },
+          {
+            "id": "a7aef1edc549fcc3",
+            "parent": "4fdbc25fae537c07",
+            "service": "auth",
+            "name": "users pool acquire",
+            "kind": "internal",
+            "offset_ms": 2.15,
+            "duration_ms": 250,
+            "status": "error",
+            "attrs": {
+              "db": "users",
+              "error": "acquire timeout"
+            }
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "search_logs",
+      "args": {
+        "service": "auth",
+        "text": "users pool settings applied",
+        "from": "2026-11-20T10:29:00Z",
+        "to": "2026-11-20T10:58:00Z",
+        "limit": 4
+      },
+      "result": {
+        "count": 2,
+        "shown": 2,
+        "samples": [
+          {
+            "ts": "2026-11-20T10:34:00.000Z",
+            "service": "auth",
+            "level": "info",
+            "msg": "users pool settings applied",
+            "pod": "auth-canary",
+            "db": "users",
+            "max_connections": 2,
+            "session_listener_connections": 2,
+            "acquire_timeout_ms": 250
+          },
+          {
+            "ts": "2026-11-20T10:56:00.000Z",
+            "service": "auth",
+            "level": "info",
+            "msg": "users pool settings applied",
+            "pod": "auth-canary",
+            "db": "users",
+            "max_connections": 12,
+            "session_listener_connections": 2,
+            "acquire_timeout_ms": 250
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "search_logs",
+      "args": {
+        "service": "auth",
+        "text": "pod=auth-stable",
+        "limit": 2,
+        "from": "2026-11-20T10:34:00Z",
+        "to": "2026-11-20T10:55:00Z"
+      },
+      "result": {
+        "count": 22,
+        "shown": 2,
+        "samples": [
+          {
+            "ts": "2026-11-20T10:34:58.007Z",
+            "service": "auth",
+            "level": "info",
+            "msg": "session request succeeded",
+            "trace_id": "7e957d9d4cfec8a8567337d68ce273e6",
+            "span_id": "9c5b1f69a9eabfdd",
+            "status": 200,
+            "pod": "auth-stable"
+          },
+          {
+            "ts": "2026-11-20T10:35:52.122Z",
+            "service": "auth",
+            "level": "info",
+            "msg": "user signed up",
+            "trace_id": "69c43730731ae99dffc2e9a01762a93d",
+            "span_id": "7af4cc9d215d85b3",
+            "status": 201,
+            "pod": "auth-stable"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "db_health",
+      "args": {
+        "db": "users",
+        "from": "2026-11-20T10:34:00Z",
+        "to": "2026-11-20T10:55:00Z"
+      },
+      "result": {
+        "db": "users",
+        "window": {
+          "from": "2026-11-20T10:34:00.000Z",
+          "to": "2026-11-20T10:55:00.000Z"
+        },
+        "metrics": {
+          "pg_up": {
+            "unit": "bool",
+            "last": 1,
+            "min": 1,
+            "max": 1,
+            "max_at": "2026-11-20T10:34:00.000Z",
+            "avg": 1,
+            "normal": 1
+          },
+          "pg_query_p95_ms": {
+            "unit": "ms",
+            "last": 4,
+            "min": 3.11,
+            "max": 4.45,
+            "max_at": "2026-11-20T10:41:00.000Z",
+            "avg": 3.78,
+            "normal": 3.69
+          },
+          "pg_connections_used": {
+            "unit": "count",
+            "last": 11,
+            "min": 9,
+            "max": 12,
+            "max_at": "2026-11-20T10:36:00.000Z",
+            "avg": 10.59,
+            "normal": 10
+          },
+          "pg_disk_used_pct": {
+            "unit": "%",
+            "last": 22.04,
+            "min": 22.03,
+            "max": 22.04,
+            "max_at": "2026-11-20T10:54:00.000Z",
+            "avg": 22.04,
+            "normal": 22.02
+          },
+          "pg_slow_queries_per_min": {
+            "unit": "count",
+            "last": 0,
+            "min": 0,
+            "max": 0,
+            "max_at": "2026-11-20T10:34:00.000Z",
+            "avg": 0,
+            "normal": 0
+          }
+        },
+        "slow_query_samples": []
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "business_kpis",
+      "args": {
+        "from": "2026-11-20T10:34:00Z",
+        "to": "2026-11-20T10:55:00Z"
+      },
+      "result": {
+        "window": {
+          "from": "2026-11-20T10:34:00.000Z",
+          "to": "2026-11-20T10:55:00.000Z"
+        },
+        "checkout_attempts": 589,
+        "checkout_success_pct": 96.43,
+        "lowest_minute_checkout_success_pct": 85.71,
+        "lowest_minute_payment_success_pct": 90,
+        "max_orders_stuck_pending_15m": 0,
+        "metrics": {
+          "checkout_attempts_per_min": {
+            "unit": "count",
+            "last": 29,
+            "min": 21,
+            "max": 40,
+            "max_at": "2026-11-20T10:43:00.000Z",
+            "avg": 26.77,
+            "normal": 24
+          },
+          "checkout_success_rate": {
+            "unit": "%",
+            "last": 100,
+            "min": 85.71,
+            "max": 100,
+            "max_at": "2026-11-20T10:36:00.000Z",
+            "avg": 96.26,
+            "normal": 100
+          },
+          "payment_success_rate": {
+            "unit": "%",
+            "last": 100,
+            "min": 90,
+            "max": 100,
+            "max_at": "2026-11-20T10:36:00.000Z",
+            "avg": 96.64,
+            "normal": 100
+          },
+          "orders_pending": {
+            "unit": "count",
+            "last": 1,
+            "min": 0,
+            "max": 6,
+            "max_at": "2026-11-20T10:46:00.000Z",
+            "avg": 2.5,
+            "normal": 2
+          },
+          "orders_stuck_pending_15m": {
+            "unit": "count",
+            "last": 0,
+            "min": 0,
+            "max": 0,
+            "max_at": "2026-11-20T10:34:00.000Z",
+            "avg": 0,
+            "normal": 0
+          },
+          "order_outbox_unpublished": {
+            "unit": "count",
+            "last": 0,
+            "min": 0,
+            "max": 2,
+            "max_at": "2026-11-20T10:50:00.000Z",
+            "avg": 0.41,
+            "normal": 0
+          },
+          "emails_failed_per_min": {
+            "unit": "count",
+            "last": 0,
+            "min": 0,
+            "max": 0,
+            "max_at": "2026-11-20T10:34:00.000Z",
+            "avg": 0,
+            "normal": 0
+          },
+          "auth_login_success_rate": {
+            "unit": "%",
+            "last": 51.1,
+            "min": 40.95,
+            "max": 51.31,
+            "max_at": "2026-11-20T10:38:00.000Z",
+            "avg": 48.25,
+            "normal": 93.33
+          }
+        }
+      },
+      "error": null
+    },
+    {
+      "type": "tool_call",
+      "tool": "list_alerts",
+      "args": {
+        "state": "all",
+        "from": "2026-11-20T10:29:00Z",
+        "to": "2026-11-20T10:58:00Z"
+      },
+      "result": {
+        "now": "2026-11-20T12:00:00.000Z",
+        "state": "all",
+        "matches": [
+          {
+            "name": "ServiceErrorRateHigh",
+            "severity": "serious",
+            "fired_at": "2026-11-20T10:39:00.000Z",
+            "resolved_at": "2026-11-20T10:56:00.000Z",
+            "summary": "http_error_rate{service=gateway} 5.00% > 2% for 5m"
+          },
+          {
+            "name": "ServiceErrorRateHigh",
+            "severity": "serious",
+            "fired_at": "2026-11-20T10:39:00.000Z",
+            "resolved_at": "2026-11-20T10:56:00.000Z",
+            "summary": "http_error_rate{service=auth} 48.69% > 2% for 5m"
+          },
+          {
+            "name": "ServiceLatencyHigh",
+            "severity": "warning",
+            "fired_at": "2026-11-20T10:44:00.000Z",
+            "resolved_at": "2026-11-20T10:56:00.000Z",
+            "summary": "http_latency_p95_ms{service=auth} 254ms > 2x normal for 10m"
+          }
+        ],
+        "rules": [
+          "CheckoutSuccessLow: checkout_success_rate < 90% for 10m [critical]",
+          "OrdersStuckPending: orders_stuck_pending_15m > 5 [critical]",
+          "PaymentSuccessLow: payment_success_rate < 90% for 10m [critical]",
+          "ServiceErrorRateHigh: http_error_rate > 2% for 5m (any service) [serious]",
+          "ServiceLatencyHigh: http_latency_p95_ms > 2x normal for 10m [warning]",
+          "PodRestarts: pod_restarts > 3 in 15m [serious]",
+          "PostgresDown: pg_up == 0 [critical]",
+          "PostgresConnectionsHigh: pg_connections_used > 80% of max [serious]",
+          "PostgresDiskHigh: pg_disk_used_pct > 80 [warning]",
+          "ReplicaLagHigh: pg_replication_lag_s > 30 for 5m [serious]",
+          "RedisMemoryHigh: redis_memory_used_mb > 85% of max [warning]",
+          "KafkaLagHigh: kafka_consumer_lag > 1000 for 10m [serious]",
+          "DlqGrowing: kafka_dlq_size grows in 15m [warning]",
+          "ThirdPartyErrors: third_party_error_rate > 5% for 5m [serious]",
+          "BadWebhookSignatures: webhook_bad_signatures_per_min > 10 [warning]",
+          "EmailsFailing: emails_failed_per_min > 5 for 10m [warning]",
+          "NodeDown: node_up == 0 [serious]"
+        ]
+      },
+      "error": null
+    }
+  ],
+  "final_output": "## Root cause\nThe 10:34 UTC Auth canary config cut the local Users Postgres connection pool from 12 to 2. Two session listeners held both connections. Interactive requests on that replica waited 250 ms for a connection and returned 503 before issuing SQL.\n\n## Evidence\nGateway route samples show 503s on login, refresh, and signup. Trace 8bd0e59997bc08dcff6ae97ad5ea01ee ends at pool acquisition. The settings log records the reduced pool and both listeners. Users Postgres stayed up and its query latency and connection usage stayed low.\n\n## Customer impact\nSome customers could not log in, refresh a session, or sign up from 10:34 to 10:56 UTC. Login success fell to roughly half per minute. Successful Auth requests continued on the other replica and checkout processing stayed healthy.\n\n## Next steps\nThe 10:56 UTC rollback restored 12 pool connections and the gateway and Auth alerts cleared. No immediate action is needed. Verify login and refresh stay healthy and reserve capacity for request traffic before rolling out these settings again."
+}
