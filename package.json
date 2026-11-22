@@ -6,9 +6,13 @@
     "eval": "node evals/harness/cli.js",
     "ui:dev": "vite --config evals/ui/vite.config.ts",
     "ui:build": "tsc -p evals/ui && vite build --config evals/ui/vite.config.ts",
-    "eval:ui": "npm run ui:build && node --watch evals/server.js"
+    "eval:ui": "tsc -p evals/ui && node evals/dev.js"
   },
   "dependencies": {
+    "@earendil-works/chord": "1.6.0",
+    "@earendil-works/pi-ai": "1.6.0",
+    "@earendil-works/pi-durable": "1.6.0",
+    "@earendil-works/pi-schema": "1.6.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "1.77.0",

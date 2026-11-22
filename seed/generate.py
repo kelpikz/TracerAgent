@@ -498,7 +498,7 @@ def carrier_update(t0, oid, ship_id, status, template, tl):
     TRACES.append(spans)
 
 
-def checkout(t0, decline=None):
+def checkout(t0, decline=None, stock_ms=6):
     tid, spans, tl = hexid(32), [], []
     oid, uid = order_id(), user_id()
     amount, items = round(R.uniform(12, 240), 2), R.randint(1, 4)
@@ -515,7 +515,7 @@ def checkout(t0, decline=None):
     c0 = ms(o0, cur)
     c = span(spans, tid, o, "catalog", "POST /stock/reserve", c0, http_status=200, order_id=oid, items=items)
     c["duration_ms"] = run_steps(spans, tid, c, "catalog",
-                                 [("pg UPDATE stock", "client", 6, {"db": "catalog"})], c0) + R.uniform(1, 3)
+                                 [("pg UPDATE stock", "client", stock_ms, {"db": "catalog"})], c0) + R.uniform(1, 3)
     log(end(c), "catalog", "info", "stock reserved", c, order_id=oid, items=items)
     tl.append((end(c), "catalog", "stock reserved", tid))
     cur += c["duration_ms"] + 0.5
@@ -536,7 +536,7 @@ def checkout(t0, decline=None):
         r0 = ms(o0, cur)
         rel = span(spans, tid, o, "catalog", "POST /stock/release", r0, http_status=200, order_id=oid)
         rel["duration_ms"] = run_steps(spans, tid, rel, "catalog",
-                                       [("pg UPDATE stock", "client", 6, {"db": "catalog"})], r0) + 1
+                                       [("pg UPDATE stock", "client", stock_ms, {"db": "catalog"})], r0) + 1
         cur += rel["duration_ms"] + 0.5
         u0 = ms(o0, cur)
         cur += run_steps(spans, tid, o, "order", [("pg UPDATE orders", "client", 4, {"db": "orders"})], u0)
@@ -817,7 +817,7 @@ def main():
             "Metrics: one point per minute (the real scraper uses 15s).",
             "Traces and logs are a sample of real traffic, not every request.",
             "Every sampled checkout has its full order story: traces, logs and timeline.",
-            "Error rate = 5xx only. 401, 402, 404 and 429 are normal and are not errors.",
+            "Service HTTP error rate counts 5xx only. Third-party metrics count provider call failures, including timeouts.",
         ],
     }
     metrics = {"start": iso(START), "step_s": 60, "points": MINUTES, "series": SERIES}

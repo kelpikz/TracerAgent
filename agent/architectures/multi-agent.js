@@ -56,6 +56,7 @@ How to work:
 1. Get the exact time of the alert or report. Make a short plan.
 2. Send specific tasks to ask_observability and ask_dependency. You can call both in the same turn.
 3. When you have enough findings, call ask_reasoning.
+   Before you call ask_critic, send every "Missing" item from ask_reasoning to ask_observability or ask_dependency, if the tools can check it.
 4. Call ask_critic with the best hypothesis. If it asks for more evidence, investigate again and repeat steps 3-4.
    If the tools cannot give a requested check, do not search for it again. In the next ask_critic call,
    write "Not available: <check>" and ask the critic to judge the evidence that exists.
@@ -105,6 +106,7 @@ Challenge the conclusion. Look for:
 - noise (a scheduled job, low traffic) that was called an incident, or the opposite.
 
 If a check is marked "Not available", do not ask for it. Judge the claim on the evidence that exists.
+Do not accept a conclusion that says the trigger or the lock holder is unknown, if the tools can still look for it.
 
 Start your reply with one line: "VERDICT: ACCEPT" or "VERDICT: INVESTIGATE MORE".
 Then give your reasons. For "INVESTIGATE MORE", give a numbered list of specific checks:

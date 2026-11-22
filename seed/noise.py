@@ -53,6 +53,7 @@ class Ctx:
         self.delta, self.alerts, self.drop = {}, [], []
         self.events, self.drop_traces, self.drop_orders, self.info = [], [], [], None
         self.base_orders = g.ORDERS  # baseline orders (raw), read before capture() swaps the list
+        self.base_traces = g.TRACES
 
     def base(self, name, **labels):
         return self.by_key[key(name, labels)]["values"]
@@ -614,3 +615,70 @@ def price_scraper(g, c):
                       client_ip=ip, user_agent=ua)
                 g.access_log(gw)
                 g.TRACES.append(spans)
+
+
+@item(id="cron_jobs", n=16, group="spikes", title="Routine scheduled jobs",
+      when="All day", looks_like="A job that breaks the shop",
+      example="Cron logs a line every minute or few minutes: stock hold expiry, session cleanup, search index refresh, sitemap, exchange "
+              "rates. An orders DB migration runs at 03:10 and a catalog statistics refresh at 06:30.",
+      truth="These are routine jobs. They finish fast and do not change any user-facing metric. The orders "
+            "migration 0087 adds a nullable column and builds its index without errors. The exchange rate "
+            "provider is sometimes slow, and the job retries.")
+def cron_jobs(g, c):
+    R = g.R
+    log = lambda i, s, lvl, msg, **kw: g.log(g.at(i, s), "cron", lvl, msg, **kw)  # noqa: E731
+    for i in range(c.N):
+        m = (i + 12 * 60) % 60  # minute of the hour (the window starts at 12:00)
+        L = g.LOAD[i]
+        log(i, R.uniform(10, 12), "info", "expired stock holds released", job="stock_hold_expiry",
+            table="stock_holds", holds_released=g.poisson(3 * L), duration_ms=round(g.jit(40, 0.2)))
+        if m % 5 == 2:
+            log(i, R.uniform(1, 4), "info", "session cleanup finished", job="session_cleanup",
+                removed=g.poisson(40 * L), duration_ms=round(g.jit(120, 0.2)))
+        if m % 10 == 4:
+            log(i, R.uniform(5, 9), "info", "abandoned cart cleanup finished", job="abandoned_cart_cleanup",
+                carts_removed=g.poisson(25 * L), duration_ms=round(g.jit(300, 0.2)))
+        if m % 15 == 9:
+            log(i, R.uniform(0, 2), "info", "search index refresh finished", job="search_index_refresh",
+                index="products_v3", docs_updated=g.poisson(60 * L), duration_s=round(g.jit(4.2, 0.2), 1))
+        if m == 5:
+            log(i, R.uniform(0, 3), "info", "sitemap build finished", job="sitemap_build",
+                urls=48_210 + R.randint(-40, 40), duration_s=round(g.jit(11, 0.15), 1))
+        if m == 30:
+            if R.random() < 0.15:
+                log(i, R.uniform(0, 1), "warn", "exchange rate provider slow, retrying", job="exchange_rates",
+                    attempt=1, timeout_ms=3000)
+            log(i, R.uniform(4, 8), "info", "exchange rates updated", job="exchange_rates", currencies=31)
+
+    # A catalog migration the evening before. Its index build times out once, the retry works.
+    t = g.at(idx(21, 20), 4.3)
+    mig = "0141_products_slug_idx"
+    step = "CREATE INDEX CONCURRENTLY products_slug_idx ON products (slug)"
+    g.log(t, "cron", "info", "migration started", job="catalog_migrations", migration=mig, db="catalog")
+    g.log(g.ms(t, 30_400), "cron", "info", "migration step", job="catalog_migrations", migration=mig,
+          step=step, result="error", error="canceling statement due to lock timeout", index_valid=False)
+    g.log(g.ms(t, 31_000), "cron", "info", "migration step", job="catalog_migrations", migration=mig,
+          step=f"DROP INDEX CONCURRENTLY IF EXISTS products_slug_idx", result="ok")
+    g.log(g.ms(t, 78_200), "cron", "info", "migration step", job="catalog_migrations", migration=mig,
+          step=step, result="ok", attempt=2, index_valid=True)
+    g.log(g.ms(t, 78_600), "cron", "info", "migration finished", job="catalog_migrations", migration=mig,
+          status="completed", retries=1, duration_s=79)
+
+    # A daily migration on the orders DB. It works.
+    t = g.at(idx(3, 10), 2.1)
+    mig = "0087_orders_add_gift_note"
+    g.log(t, "cron", "info", "migration started", job="orders_migrations", migration=mig, db="orders")
+    g.log(g.ms(t, 900), "cron", "info", "migration step", job="orders_migrations", migration=mig,
+          step="ALTER TABLE orders ADD COLUMN gift_note text", result="ok")
+    g.log(g.ms(t, 41_300), "cron", "info", "migration step", job="orders_migrations", migration=mig,
+          step="CREATE INDEX CONCURRENTLY orders_gift_note_idx ON orders (gift_note)", result="ok",
+          index_valid=True)
+    g.log(g.ms(t, 41_800), "cron", "info", "migration finished", job="orders_migrations", migration=mig,
+          status="completed", duration_s=42)
+
+    # The daily statistics refresh on the catalog DB. It is fast and changes no plan.
+    t = g.at(idx(6, 30), 0.8)
+    g.log(t, "cron", "info", "catalog stats refresh started", job="catalog_stats_refresh", db="catalog",
+          tables="products,stock,prices")
+    g.log(g.ms(t, 14_600), "cron", "info", "catalog stats refresh finished", job="catalog_stats_refresh",
+          db="catalog", tables="products,stock,prices", duration_s=15)

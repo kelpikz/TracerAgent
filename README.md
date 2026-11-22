@@ -96,17 +96,16 @@ If `pi` is missing or you are signed out, the runner skips the LLM graders.
 Each case has its own data in `data/<case-id>/`. The data is not in git. The runner makes it from the case's
 `incidents` and `noise` when the folder is missing. Real faults for cases are in `seed/incidents.py`.
 
-Set the agent command, then run the smoke test to check the agent and all four graders.
+Set the agent command, then run the replica lag case to check the agent and all four graders.
 
 ```sh
 npm install
 npm run eval -- data --all
 npm run eval -- list
-npm run eval -- run smoke
 npm run eval -- run noise-price-import-replica-lag
 npm run eval -- run --all
-npm run eval -- run smoke --agent-model openai-codex/gpt-6.2-astra --agent-effort low
-npm run eval -- run smoke --judge-model openai-codex/gpt-6.2-astra --judge-thinking low
+npm run eval -- run noise-price-import-replica-lag --agent-model openai-codex/gpt-6.2-astra --agent-effort low
+npm run eval -- run noise-price-import-replica-lag --judge-model openai-codex/gpt-6.2-astra --judge-thinking low
 ```
 
 Use `--run-id <id>` to set the run ID. Use `--agent-model <provider/id>` and

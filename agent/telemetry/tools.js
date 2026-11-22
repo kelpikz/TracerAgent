@@ -48,6 +48,22 @@ function summarize(store, series, win) {
   };
 }
 
+// When a series is high at the end of the window, the time it became high:
+// walk back until it stays normal for 15 minutes.
+function highSince(store, series, win) {
+  const { values, first } = seriesSlice(store, series, win);
+  const normal = median(series.values);
+  if (!values.length || !(normal > 0)) return {};
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  if (avg <= 3 * normal) return {};
+  let start = null;
+  let quiet = 0;
+  for (let i = first + values.length - 1; i >= 0 && quiet < 15; i--) {
+    if (series.values[i] > 2 * normal) { start = i; quiet = 0; } else quiet++;
+  }
+  return start == null ? {} : { high_since: iso(store.timeAt(start)) };
+}
+
 function downsample(store, series, win) {
   const { values, first } = seriesSlice(store, series, win);
   const step = Math.max(1, Math.ceil(values.length / MAX_POINTS));
@@ -372,7 +388,7 @@ export const telemetryTools = [
         const dbs = [...new Set(store.metrics.series.filter(s => s.name.startsWith('pg_')).map(s => s.labels.db)), 'redis'];
         requireKnown(db, dbs, 'database');
       }
-      const out = Object.fromEntries(series.map(s => [s.name, summarize(store, s, win)]));
+      const out = Object.fromEntries(series.map(s => [s.name, { ...summarize(store, s, win), ...highSince(store, s, win) }]));
       const slow = store.logs.filter(r => inWindow(r._t, win) && r.db === db && /slow/i.test(r.msg)).slice(0, 5).map(cleanLog);
       return { db, window: { from: iso(win.from), to: iso(win.to) }, metrics: out, slow_query_samples: slow };
     },
