@@ -6,3 +6,5 @@ node_modules/
 evals/results/
 evals/ui/dist/
 .agent-runs/
+.env
+.env.*

@@ -40,7 +40,7 @@ The deploy and the `gift_note` warning make a good false lead. But the Payment p
 
 ## Test transcripts
 
-Scores are from the deterministic graders only (`check-case.js` without `--judge`). The transcripts are in `C:\Users\ajith\AppData\Local\Temp\claude\601c041d17df3b6e\bd8d26a4-9431-4f8e-b64b-4d7eae599c2a\scratchpad\` as `weak_deploy.json`, `weak_shallow.json` and `good_alt.json`.
+Scores are from the deterministic graders only (`check-case.js` without `--judge`). The review used temporary transcripts that are not in the repo: `weak_deploy.json`, `weak_shallow.json` and `good_alt.json`.
 
 | Transcript | Trajectory | Outcome | Total |
 | --- | --- | --- | --- |

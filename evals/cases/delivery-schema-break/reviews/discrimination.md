@@ -34,7 +34,7 @@ No false lead sits inside the fault window as an error log. In the window, the o
 
 ## Test transcripts
 
-Scratch files are in `C:\Users\ajith\AppData\Local\Temp\claude\601c041d17df3b6e\1804c860-5be2-4813-ad9c-5a6ae17b6828\scratchpad\r2-discrimination-delivery\` (`weak1.json`, `weak2.json`, `weak3.json`, `good.json`). The results are from real tool output (`fill-transcript.js`) and the deterministic graders only (no `--judge`). Scores are out of 10, from `check-case.js`. The Trajectory and Outcome columns are each out of 5.
+The review used temporary scratch files that are not in the repo (`weak1.json`, `weak2.json`, `weak3.json`, `good.json`). The results are from real tool output (`fill-transcript.js`) and the deterministic graders only (no `--judge`). Scores are out of 10, from `check-case.js`. The Trajectory and Outcome columns are each out of 5.
 
 | Transcript | Trajectory | Outcome | Total |
 | --- | --- | --- | --- |
