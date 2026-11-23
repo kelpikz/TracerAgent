@@ -202,3 +202,74 @@ export interface Run extends RunSummary {
   graders?: Record<GraderKind, { deterministic: Grade; llm: Grade }>;
   error: ErrorInfo | null;
 }
+
+export type BenchmarkStatus = 'running' | 'done' | 'stopped' | 'interrupted' | 'error';
+
+export interface BenchmarkConfig {
+  name: string;
+  models: string[];
+  architectures: string[];
+  efforts: string[];
+  cases: string[];
+  repeats: number;
+  parallel: number;
+  judge: JudgeChoice;
+}
+
+/** The short result of one benchmark run. */
+export interface CellResult {
+  status: 'done' | 'error';
+  total: number | null;
+  outcome: number | null;
+  trajectory: number | null;
+  duration_s: number | null;
+  cost_usd: number | null;
+  /** Missing in results saved before tokens were recorded. */
+  tokens?: number | null;
+  steps: number | null;
+  rubric: Array<{ name: string; score: number | null }>;
+  error: string | null;
+}
+
+export interface BenchmarkCell {
+  repeat: number;
+  case_id: string;
+  model: string;
+  architecture: string;
+  effort: string;
+  run_id: string | null;
+  result: CellResult | null;
+}
+
+export interface Benchmark {
+  id: string;
+  name: string;
+  created_at: string;
+  ended_at: string | null;
+  status: BenchmarkStatus;
+  error: string | null;
+  config: BenchmarkConfig;
+  cells: BenchmarkCell[];
+}
+
+export interface BenchmarkSummary {
+  id: string;
+  name: string;
+  created_at: string;
+  ended_at: string | null;
+  status: BenchmarkStatus;
+  models: string[];
+  architectures: string[];
+  efforts: string[];
+  case_count: number;
+  repeats: number;
+  runs: number;
+  finished: number;
+  failed: number;
+}
+
+/** Median minutes for one run, keyed "model|architecture|effort" and "architecture|effort". */
+export interface TimeEstimates {
+  variants: Record<string, number>;
+  architectures: Record<string, number>;
+}

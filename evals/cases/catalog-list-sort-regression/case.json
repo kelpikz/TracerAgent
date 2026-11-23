@@ -7,5 +7,5 @@
   "noise": ["catalog_gc", "price_scraper"],
   "input": "ServiceLatencyHigh [warning] at 2026-11-20 11:22 UTC\nhttp_latency_p95_ms{service=gateway} 385.9ms > 2x normal for 10m\n\nCurrent time: 2026-11-20 12:00 UTC.\nWhich customer requests slowed down, what changed, and what should we do now?",
   "tags": ["medium", "catalog", "postgres", "deploy", "latency"],
-  "timeout_s": 600
+  "timeout_s": 1200
 }

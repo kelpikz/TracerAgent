@@ -29,6 +29,10 @@ const DEPENDENCY_TOOLS = [
   'get_runbook', 'past_incidents',
 ];
 
+// One round = one call each to ask_observability and ask_dependency.
+const MAX_ROUNDS = 3;
+const INVESTIGATORS = ['observability', 'dependency'];
+
 const iso = t => new Date(t).toISOString().slice(0, 16).replace('T', ' ');
 
 const window = store => `Telemetry covers ${iso(store.start)} to ${iso(store.now)} UTC. "Now" is ${iso(store.now)}.`;
@@ -52,20 +56,27 @@ You have a team of agents. Each one sees only the text you send. Put the times, 
 - write_report: give it the accepted conclusion and all evidence. It writes the final report. This ends the investigation.
 You can also call list_alerts and list_services yourself to plan.
 
+Find the full cause chain. For each cause you find, ask what made it happen and when that began,
+until you reach a change (deploy, migration, config change, job) or an outside event. The first cause can start hours before the alert.
+
+An investigation round is one set of ask_observability and ask_dependency calls. You have at most ${MAX_ROUNDS} rounds.
+Make each round count: give each agent all open questions in one task.
+
 How to work:
 1. Get the exact time of the alert or report. Make a short plan.
-2. Send specific tasks to ask_observability and ask_dependency. You can call both in the same turn.
-3. When you have enough findings, call ask_reasoning.
-   Before you call ask_critic, send every "Missing" item from ask_reasoning to ask_observability or ask_dependency, if the tools can check it.
-4. Call ask_critic with the best hypothesis. If it asks for more evidence, investigate again and repeat steps 3-4.
+2. Round 1: send specific tasks to ask_observability and ask_dependency in the same turn.
+   Ask them when the affected service or database first got worse (look back over all telemetry, not only near the alert),
+   and what changed just before that.
+3. Call ask_reasoning once. Then use round 2 for the "Missing" items that the tools can check.
+4. Call ask_critic with the best hypothesis. If it asks for more evidence and you have rounds left, use one more round for its checks.
+   Do not call ask_reasoning again. Call ask_critic at most 2 times.
    If the tools cannot give a requested check, do not search for it again. In the next ask_critic call,
    write "Not available: <check>" and ask the critic to judge the evidence that exists.
-   Do not call ask_critic more than 3 times.
+5. Call write_report. Always finish with write_report. When no rounds are left, call write_report next.
 
 When you call ask_reasoning, ask_critic or write_report, include the raw evidence for each claim:
 the exact IDs, values, times and log lines from the tool results (for example "trace 7d2c… blocking_pid=5089").
-Copy these facts. Do not reword them, and keep them in every later call. Do not drop a fact only because it is not proved yet.
-5. Call write_report. Always finish with write_report.`,
+Copy these facts. Do not reword them, and keep them in every later call. Do not drop a fact only because it is not proved yet.`,
 
   observability: store => `You are the observability agent in an incident investigation for an online shop.
 You investigate logs, metrics, traces, business KPIs and orders.
@@ -73,6 +84,7 @@ ${window(store)}
 ${RULES}
 
 Do the task you get. Use more than one source. Find when the problem started and stopped, and how large it is.
+Check if a related metric or log got worse earlier than the alert, and when. Look back over all telemetry if needed.
 Reply with short facts: times in UTC, metric values compared to normal, trace IDs, order IDs, log patterns.
 Say what you checked that was normal too.`,
 
@@ -82,7 +94,8 @@ databases, Kafka topics, dead-letter queues and third-party services. You also r
 ${window(store)}
 ${RULES}
 
-Do the task you get. Find changes and dependency problems near the time of the incident, and their exact times.
+Do the task you get. Find changes and dependency problems before the incident, and their exact times.
+Look back to when the problem first began. This can be hours before the alert.
 Reply with short facts: change IDs, services, times in UTC, values compared to normal.
 Say what you checked that was normal too.`,
 
@@ -92,6 +105,8 @@ You get the findings of the investigation. You have no tools.
 Make 2 to 4 competing root-cause hypotheses. One hypothesis can be "this is expected behavior, not an incident".
 For each hypothesis, give the evidence for it, the evidence against it, and what data is missing.
 Check the timing: a cause must start before its effect.
+If a job or query got slower, compare its speed per item (for example rows per second) before and after, not only its input size.
+If a change happened just before a step change in a metric, test it as the cause of that step.
 Rank the hypotheses from most to least likely, and say how confident you are in the first one.
 Name the data that would best separate the top two hypotheses.`,
 
@@ -106,7 +121,10 @@ Challenge the conclusion. Look for:
 - noise (a scheduled job, low traffic) that was called an incident, or the opposite.
 
 If a check is marked "Not available", do not ask for it. Judge the claim on the evidence that exists.
-Do not accept a conclusion that says the trigger or the lock holder is unknown, if the tools can still look for it.
+Accept a link that a trace, log or metric shows directly. Do not ask to check every single event.
+Check the full cause chain. If the cause is a slow or stuck job, query or service, ask what made it slow and when that began.
+Do not accept a conclusion that leaves this unknown, if the tools can still look for it.
+If no investigation rounds are left, start with "VERDICT: ACCEPT" and list the gaps the report must state.
 
 Start your reply with one line: "VERDICT: ACCEPT" or "VERDICT: INVESTIGATE MORE".
 Then give your reasons. For "INVESTIGATE MORE", give a numbered list of specific checks:
@@ -115,14 +133,19 @@ which data, which service, which time window.`,
   reporting: () => `You are the reporting agent in an incident investigation for an online shop.
 You get the conclusion and the evidence of the investigation. You have no tools.
 Write the final report. Use only the facts you get. Do not add facts.
+Give the full cause chain, from the first cause to the customer symptom. Name the most likely first cause as the root cause,
+and give your confidence. Do not call a link "not proven" when the timing and the evidence support it.
+If requests failed before payment, say that customers were not charged.
 
 Write in short, plain sentences, with these headings:
 ## Root cause
 ## Evidence
 (times in UTC, metric values, trace or order IDs)
 ## Customer impact
+(how many attempts or orders, where requests failed, if customers were charged, and if the problem is still active)
 ## Next steps
-(remediation steps, most important first. Say "No immediate action is needed." if that is true)`,
+(most important first: stop the immediate cause now, then fix the first cause (for example repair or revert the change), then how to check recovery.
+Say "No immediate action is needed." if that is true)`,
 };
 
 export const ROLES = [
@@ -200,15 +223,27 @@ function buildExtensions(store, overrides) {
     reporting: 'Ask the reporting agent to write the final report. Its report is the final answer and ends the investigation.',
   };
 
+  const calls = { observability: 0, dependency: 0 };
+  const roundsLeft = () => MAX_ROUNDS - Math.max(...INVESTIGATORS.map(r => calls[r]));
+
   const agentTools = Object.entries(roles).map(([role, { tools, param, help }]) => defineTool({
     name: role === 'reporting' ? 'write_report' : `ask_${role}`,
     description: descriptions[role],
     parameters: { type: 'object', properties: { [param]: { type: 'string', description: help } }, required: [param] },
     replay: 'safe',
     async execute(args, api, context) {
+      let content = args[param];
+      if (INVESTIGATORS.includes(role)) {
+        if (calls[role] >= MAX_ROUNDS) {
+          return { output: [{ type: 'text', text: `No investigation rounds are left (limit ${MAX_ROUNDS}). Call write_report now.` }] };
+        }
+        calls[role]++;
+      } else if (role === 'reasoning' || role === 'critic') {
+        content += `\n\nInvestigation rounds left: ${roundsLeft()} of ${MAX_ROUNDS}.`;
+      }
       const { text, details } = await runChild(api, context, {
         role,
-        content: args[param],
+        content,
         tools,
         instructions: PROMPTS[role](store),
         overrides,

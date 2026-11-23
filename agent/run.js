@@ -1,4 +1,5 @@
 // Runs one incident through an architecture on a durable pi harness.
+import { randomBytes } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { BACKGROUND_CONTEXT } from '@earendil-works/chord/context';
@@ -63,7 +64,8 @@ export async function runIncident({ input, dataDir, model, effort = 'high', now,
   for (const extension of arch.extensions({ store, agents })) registry.install(extension);
 
   mkdirSync(RUNS_DIR, { recursive: true });
-  const id = runId ?? `${arch.name}-${startedAt.toISOString().replace(/[:.]/g, '-')}`;
+  // The random suffix keeps parallel runs that start in the same ms apart.
+  const id = runId ?? `${arch.name}-${startedAt.toISOString().replace(/[:.]/g, '-')}-${randomBytes(3).toString('hex')}`;
   const file = join(RUNS_DIR, `${id}.sqlite`);
   log(`architecture=${arch.name} model=${model} effort=${effort} store=${file}`);
   if (agents) log(`agents=${JSON.stringify(agents)}`);

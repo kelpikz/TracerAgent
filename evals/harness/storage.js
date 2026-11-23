@@ -115,8 +115,9 @@ export async function listRuns(id, limit = Infinity) {
   const ids = files.filter(file => file.endsWith('.json') && validRunId(file.slice(0, -5)))
     .map(file => file.slice(0, -5)).sort().reverse().slice(0, limit);
   const runs = await Promise.all(ids.map(runId => readRunStatus(id, runId)));
-  return runs.filter(Boolean).map(({ run_id, status, started_at, ended_at, agent, judge, score, transcript }) => ({
+  return runs.filter(Boolean).map(({ run_id, status, started_at, ended_at, agent, judge, score, transcript, benchmark }) => ({
     run_id, status, started_at, ended_at,
+    benchmark_id: benchmark?.id ?? null,
     agent: agent && { name: agent.name, model: agent.model, effort: agent.effort },
     judge_model: judge?.model ?? null,
     steps: transcript?.steps?.length ?? null,
@@ -181,4 +182,44 @@ export async function writeRun(run, { initial = false } = {}) {
       if (error.code !== 'ENOENT') throw error;
     });
   }
+}
+
+// A benchmark is one JSON file. It holds the config and one cell for each run.
+const benchmarksDir = join(evalsDir, 'results', 'benchmarks');
+
+function benchmarkPath(id) {
+  if (!validRunId(id)) throw new Error('Invalid benchmark ID.');
+  return join(benchmarksDir, `${id}.json`);
+}
+
+export function readBenchmark(id) {
+  return readJson(benchmarkPath(id));
+}
+
+export async function writeBenchmark(benchmark) {
+  const path = benchmarkPath(benchmark.id);
+  await mkdir(benchmarksDir, { recursive: true });
+  const temporaryPath = `${path}.${randomBytes(4).toString('hex')}.tmp`;
+  await writeFile(temporaryPath, `${JSON.stringify(benchmark, null, 1)}\n`, { flag: 'wx' });
+  try {
+    await rename(temporaryPath, path);
+  } finally {
+    await unlink(temporaryPath).catch(error => {
+      if (error.code !== 'ENOENT') throw error;
+    });
+  }
+}
+
+/** Benchmark IDs, newest first. */
+export async function listBenchmarkIds() {
+  const files = await readdir(benchmarksDir).catch(error => {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  });
+  return files.filter(file => file.endsWith('.json') && validRunId(file.slice(0, -5)))
+    .map(file => file.slice(0, -5)).sort().reverse();
+}
+
+export function benchmarkLogPath(id) {
+  return benchmarkPath(id).replace(/\.json$/, '.log');
 }

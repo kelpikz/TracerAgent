@@ -1,5 +1,5 @@
 import { Activity, Monitor, Moon, Search, SearchX, Sun } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { ScoreChip } from '@/components/ScoreChip';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Input } from '@/components/ui/input';
@@ -54,14 +54,25 @@ function ThemeToggle() {
   );
 }
 
+export type Mode = 'cases' | 'benchmarks';
+
+const modes: { value: Mode; label: string }[] = [
+  { value: 'cases', label: 'Cases' },
+  { value: 'benchmarks', label: 'Benchmarks' },
+];
+
 interface SidebarProps {
   cases: CaseSummary[] | null;
   error: string | null;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  mode: Mode;
+  onModeChange: (mode: Mode) => void;
+  /** The benchmark list, shown in benchmark mode. */
+  benchmarks: ReactNode;
 }
 
-export function SidebarContent({ cases, error, selectedId, onSelect }: SidebarProps) {
+export function SidebarContent({ cases, error, selectedId, onSelect, mode, onModeChange, benchmarks }: SidebarProps) {
   const [query, setQuery] = useState('');
 
   const visible = useMemo(() => {
@@ -80,6 +91,28 @@ export function SidebarContent({ cases, error, selectedId, onSelect }: SidebarPr
         </div>
       </div>
 
+      <div className="px-3 pb-3">
+        <div role="radiogroup" aria-label="Page" className="grid grid-cols-2 gap-0.5 rounded-lg bg-muted p-[3px]">
+          {modes.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={mode === value}
+              onClick={() => onModeChange(value)}
+              className={cn(
+                'rounded-md py-1 text-[13px] font-medium text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/40',
+                mode === value && 'bg-card text-foreground shadow-xs',
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {mode === 'benchmarks' ? benchmarks : (
+      <>
       <div className="px-3 pb-3">
         <div className="relative">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -154,6 +187,8 @@ export function SidebarContent({ cases, error, selectedId, onSelect }: SidebarPr
           })}
         </ul>
       </nav>
+      </>
+      )}
 
       <div className="flex items-center justify-between border-t px-4 py-3">
         <span className="text-xs text-muted-foreground">Theme</span>

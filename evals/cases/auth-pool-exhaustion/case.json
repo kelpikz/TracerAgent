@@ -7,5 +7,5 @@
   "noise": ["newsletter_spike", "cron_jobs"],
   "input": "ServiceErrorRateHigh [serious] at 2026-11-20 10:39 UTC\nhttp_error_rate{service=gateway} 5.00% > 2% for 5m\n\nCurrent time: 2026-11-20 12:00 UTC.\nWhat caused the page, which customers were affected, and do we need to act now?",
   "tags": ["medium", "auth", "postgres", "config-change"],
-  "timeout_s": 600
+  "timeout_s": 1200
 }

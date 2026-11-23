@@ -112,8 +112,8 @@ export async function gradeRun(testCase, run, dataDir) {
   run.ended_at = new Date().toISOString();
 }
 
-export async function runCase(testCase, runId, judge, agent) {
-  const run = createRun(testCase.id, runId, judge, agent);
+export async function runCase(testCase, runId, judge, agent, extra = {}) {
+  const run = { ...createRun(testCase.id, runId, judge, agent), ...extra };
   run.worker_pid = process.pid;
   await writeRun(run, { initial: true });
   try {

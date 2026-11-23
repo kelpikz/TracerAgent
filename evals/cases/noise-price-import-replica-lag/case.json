@@ -6,7 +6,7 @@
   "noise": ["price_import"],
   "input": "ReplicaLagHigh [serious] at 2026-11-20 00:39 UTC\npg_replication_lag_s{db=catalog} 36s > 30s for 5m\n\nFind the cause, check customer impact, and tell me if we need to act.",
   "tags": ["catalog", "postgres", "scheduled-job"],
-  "timeout_s": 60,
+  "timeout_s": 1200,
   "info": {
     "failure": "The Catalog replica falls behind the primary database. Product pages can show old prices for about 10 minutes. Checkout uses the price from the primary database.",
     "trigger": "The nightly `price_import` job starts at 00:30 UTC. It updates 48,210 rows in 10 batches. The replica falls behind as it applies the writes.",

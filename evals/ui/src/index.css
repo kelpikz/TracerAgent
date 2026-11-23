@@ -44,6 +44,13 @@
   --info: oklch(0.55 0.2 270);
   --sidebar: oklch(0.975 0.003 260);
   --code: oklch(0.975 0.003 260);
+  /* Benchmark chart colors, one for each model. */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
 }
 
 .dark {
@@ -71,6 +78,12 @@
   --info: oklch(0.75 0.14 265);
   --sidebar: oklch(0.165 0.007 270);
   --code: oklch(0.165 0.007 270);
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-6: #0ca30c;
 }
 
 @theme inline {

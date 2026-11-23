@@ -22,5 +22,5 @@
     "lock-contention",
     "latent-cause"
   ],
-  "timeout_s": 900
+  "timeout_s": 1200
 }

@@ -1,4 +1,7 @@
-import type { AgentChoice, CaseDetail, CaseSummary, JudgeChoice, JudgeOptions, Run } from './types';
+import type {
+  AgentChoice, Benchmark, BenchmarkConfig, BenchmarkStatus, BenchmarkSummary, CaseDetail, CaseSummary, JudgeChoice,
+  JudgeOptions, Run, TimeEstimates,
+} from './types';
 
 export class ApiError extends Error {
   status: number;
@@ -37,4 +40,15 @@ export const api = {
         body: JSON.stringify({ judge: judge ?? undefined, agent: agent ?? undefined }),
       } : {}),
     }),
+  benchmarks: () => request<BenchmarkSummary[]>('/api/benchmarks'),
+  benchmark: (id: string) => request<Benchmark>(`/api/benchmarks/${encodeURIComponent(id)}`),
+  estimates: () => request<TimeEstimates>('/api/benchmarks/estimate'),
+  createBenchmark: (config: BenchmarkConfig) =>
+    request<{ id: string }>('/api/benchmarks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config),
+    }),
+  benchmarkAction: (id: string, action: 'stop' | 'resume') =>
+    request<{ status: BenchmarkStatus }>(`/api/benchmarks/${encodeURIComponent(id)}/${action}`, { method: 'POST' }),
 };

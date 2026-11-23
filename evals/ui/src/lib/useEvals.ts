@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from './api';
+import { readRoute } from './route';
 import type { AgentChoice, CaseDetail, CaseSummary, JudgeChoice, Run, RunSummary } from './types';
 
 const POLL_MS = 1500;
@@ -15,20 +16,6 @@ function summaryOf(run: Run): RunSummary {
     cost_usd: run.transcript?.usage?.cost_usd ?? null,
     score_total: run.score?.total ?? null,
   };
-}
-
-function readHash() {
-  const [caseId, runId] = location.hash.replace(/^#\/?/, '').split('/');
-  return { caseId: caseId ? decodeURIComponent(caseId) : null, runId: runId ? decodeURIComponent(runId) : null };
-}
-
-function writeHash(caseId: string | null, runId: string | null) {
-  try {
-    const hash = caseId ? `#/${encodeURIComponent(caseId)}${runId ? `/${encodeURIComponent(runId)}` : ''}` : '';
-    history.replaceState(null, '', `${location.pathname}${hash}`);
-  } catch {
-    // The URL cannot change. Do nothing.
-  }
 }
 
 export function useEvals() {
@@ -50,7 +37,6 @@ export function useEvals() {
     selection.current = { caseId: nextCase, runId: nextRun };
     setCaseId(nextCase);
     setRunId(nextRun);
-    writeHash(nextCase, nextRun);
   }, []);
 
   const applyRun = useCallback((forCase: string, next: Run) => {
@@ -167,9 +153,11 @@ export function useEvals() {
         for (const item of list) {
           if (item.last_run?.status === 'running') watchRun(item.id, item.last_run.run_id);
         }
-        const hash = readHash();
-        const first = list.find(item => item.id === hash.caseId) ?? list[0];
-        if (first) await openCase(first.id, first.id === hash.caseId ? hash.runId : null);
+        // On a benchmark page, the app opens a case when you go back to the cases.
+        const route = readRoute();
+        if (route.mode !== 'cases') return;
+        const first = list.find(item => item.id === route.caseId) ?? list[0];
+        if (first) await openCase(first.id, first.id === route.caseId ? route.runId : null);
       } catch (error) {
         if (live) setCasesError(error instanceof Error ? error.message : 'Cannot load the cases.');
       }
@@ -187,6 +175,11 @@ export function useEvals() {
     dismissNotice: () => setNotice(null),
     openCase: (id: string) => { if (id !== selection.current.caseId) void openCase(id); },
     selectRun: (id: string) => { if (selection.current.caseId) void selectRun(selection.current.caseId, id); },
+    /** Opens one run of any case, for example from a benchmark. */
+    openRun: (id: string, forRun: string) => {
+      if (id === selection.current.caseId) void selectRun(id, forRun);
+      else void openCase(id, forRun);
+    },
     startRun,
   };
 }

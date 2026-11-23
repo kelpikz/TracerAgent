@@ -1,5 +1,6 @@
 import { parseArgs } from 'node:util';
 import { validateAgent } from './agent.js';
+import { runBenchmark } from './benchmark.js';
 import { generateData } from './data.js';
 import { validateJudge } from './judge.js';
 import { runCase } from './runner.js';
@@ -69,7 +70,14 @@ async function main([command, ...args]) {
     for (const testCase of cases) await generateData(testCase);
     return;
   }
-  if (command !== 'run') throw new Error('Use list, data <case-id>, data --all, run <case-id>, or run --all.');
+  if (command === 'bench') {
+    if (args.length !== 1 || !validRunId(args[0])) throw new Error('Use bench <benchmark-id>.');
+    const benchmark = await runBenchmark(args[0]);
+    console.log(`benchmark ${benchmark.id}  ${benchmark.status}${benchmark.error ? `  ${benchmark.error}` : ''}`);
+    if (benchmark.status === 'error') process.exitCode = 1;
+    return;
+  }
+  if (command !== 'run') throw new Error('Use list, data <case-id>, data --all, run <case-id>, run --all, or bench <benchmark-id>.');
   const { all, id, runId, judge, agent } = parseRunArgs(args);
   const cases = all ? await listCases() : [await readCase(id)];
   if (!cases[0] && !all) throw new Error(`Case ${id} does not exist.`);

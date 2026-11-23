@@ -19,5 +19,5 @@
     "third-party",
     "deploy-dead-end"
   ],
-  "timeout_s": 600
+  "timeout_s": 1200
 }

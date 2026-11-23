@@ -1,16 +1,20 @@
 import { spawn } from 'node:child_process';
-import { createReadStream } from 'node:fs';
+import { closeSync, createReadStream, openSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { pipeline } from 'node:stream/promises';
 import { extname, join, normalize, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { agentDefaults, listArchitectures, validateAgent } from './harness/agent.js';
+import {
+  benchmarkStatus, benchmarkSummary, newBenchmark, prepareResume, stopBenchmark, timeEstimates,
+  validateBenchmarkConfig,
+} from './harness/benchmark.js';
 import { judgeDefaults, judgeThinkingLevels, runPi, validateJudge } from './harness/judge.js';
 import { createRun, failRun } from './harness/runner.js';
 import {
-  caseDir, evalsDir, graderKinds, listCases, listRuns, newRunId, readCase,
-  readJson, readOptional, readRun, readRunStatus, repoDir, validId, validRunId, writeRun,
+  benchmarkLogPath, caseDir, evalsDir, graderKinds, listBenchmarkIds, listCases, listRuns, newRunId, readBenchmark,
+  readCase, readJson, readOptional, readRun, readRunStatus, repoDir, validId, validRunId, writeBenchmark, writeRun,
 } from './harness/storage.js';
 
 const distDir = join(evalsDir, 'ui', 'dist');
@@ -105,26 +109,30 @@ function sendJson(response, status, data) {
   response.end(JSON.stringify(data));
 }
 
-async function readRunSettings(request) {
+/** Reads a JSON body. Returns undefined for an empty body. */
+async function readBody(request, limitKb) {
   const chunks = [];
   let bytes = 0;
   for await (const chunk of request.iterator({ destroyOnReturn: false })) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     bytes += buffer.length;
-    if (bytes > 4096) {
+    if (bytes > limitKb * 1024) {
       request.resume();
-      throw new Error('The request body must be 4 KB or less.');
+      throw new Error(`The request body must be ${limitKb} KB or less.`);
     }
     chunks.push(buffer);
   }
-  if (!bytes) return { judge: {}, agent: {} };
-
-  let body;
+  if (!bytes) return undefined;
   try {
-    body = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)));
+    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)));
   } catch {
     throw new Error('Use a valid JSON request body.');
   }
+}
+
+async function readRunSettings(request) {
+  const body = await readBody(request, 4);
+  if (body === undefined) return { judge: {}, agent: {} };
   if (!body || typeof body !== 'object' || Array.isArray(body)
       || Object.keys(body).some(key => key !== 'judge' && key !== 'agent')) {
     throw new Error('Use a JSON object with optional judge and agent fields.');
@@ -218,6 +226,93 @@ function launchRun(caseId, runId, settings) {
   child.unref();
 }
 
+function isLocalPage(request) {
+  const { origin, host } = request.headers;
+  return !origin || (/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) && origin === `http://${host}`);
+}
+
+async function markBenchmarkError(id, error) {
+  try {
+    const benchmark = await readBenchmark(id);
+    if (!benchmark || benchmark.worker_pid) return;
+    await writeBenchmark({ ...benchmark, status: 'error', error: `Could not start the worker. ${error.message}` });
+  } catch (writeError) {
+    console.error(writeError);
+  }
+}
+
+function launchBenchmark(id) {
+  let child;
+  try {
+    // The worker writes one line for each finished run to a log file next to the benchmark.
+    const log = openSync(benchmarkLogPath(id), 'a');
+    try {
+      child = spawn(process.execPath, [join(evalsDir, 'harness', 'cli.js'), 'bench', id], {
+        cwd: repoDir, stdio: ['ignore', log, log], windowsHide: true, detached: true,
+      });
+    } finally {
+      closeSync(log);
+    }
+  } catch (error) {
+    void markBenchmarkError(id, error);
+    return;
+  }
+  child.once('error', error => void markBenchmarkError(id, error));
+  child.unref();
+}
+
+// Stop and resume requests for one benchmark run one at a time.
+const busyBenchmarks = new Set();
+
+async function handleBenchmarks(request, response, rawId, action) {
+  const { method } = request;
+  if (method === 'GET' && rawId === undefined) {
+    const benchmarks = await Promise.all((await listBenchmarkIds()).map(id => readBenchmark(id).catch(() => null)));
+    return sendJson(response, 200, benchmarks.filter(Boolean).map(benchmarkSummary));
+  }
+  if (method === 'GET' && rawId === 'estimate' && action === undefined) {
+    return sendJson(response, 200, await timeEstimates());
+  }
+  if (method === 'POST' && !isLocalPage(request)) {
+    return sendJson(response, 403, { error: 'Use the local eval page.' });
+  }
+  if (method === 'POST' && rawId === undefined) {
+    let config;
+    try {
+      config = await validateBenchmarkConfig(await readBody(request, 64));
+    } catch (error) {
+      return sendJson(response, 400, { error: error.message });
+    }
+    const benchmark = newBenchmark(config);
+    await writeBenchmark(benchmark);
+    launchBenchmark(benchmark.id);
+    return sendJson(response, 202, { id: benchmark.id });
+  }
+
+  const id = decodeURIComponent(rawId ?? '');
+  if (!validRunId(id)) return sendJson(response, 400, { error: 'Invalid benchmark ID.' });
+  if (method === 'GET' && action === undefined) {
+    const benchmark = await readBenchmark(id);
+    if (!benchmark) return sendJson(response, 404, { error: 'Benchmark not found.' });
+    return sendJson(response, 200, { ...benchmark, status: benchmarkStatus(benchmark) });
+  }
+  if (method !== 'POST' || !['stop', 'resume'].includes(action)) {
+    return sendJson(response, 404, { error: 'Page not found.' });
+  }
+  if (busyBenchmarks.has(id)) return sendJson(response, 409, { error: 'Wait for the last request to finish.' });
+  busyBenchmarks.add(id);
+  try {
+    const benchmark = action === 'stop' ? await stopBenchmark(id) : await prepareResume(id);
+    if (!benchmark) return sendJson(response, 404, { error: 'Benchmark not found.' });
+    if (action === 'resume') launchBenchmark(id);
+    return sendJson(response, 200, { status: benchmarkStatus(benchmark) });
+  } catch (error) {
+    return sendJson(response, 409, { error: error.message });
+  } finally {
+    busyBenchmarks.delete(id);
+  }
+}
+
 async function caseDetail(testCase) {
   const dir = caseDir(testCase.id);
   const [runs, graders, labels] = await Promise.all([
@@ -270,6 +365,9 @@ export async function handleRequest(request, response) {
       return sendJson(response, 200, summaries);
     }
 
+    if (api === 'api' && resource === 'benchmarks' && !extra.length) {
+      return await handleBenchmarks(request, response, rawCaseId || undefined, tail);
+    }
     if (api !== 'api' || !['cases', 'runs'].includes(resource) || extra.length || !rawCaseId) {
       return sendJson(response, 404, { error: 'Page not found.' });
     }
@@ -289,8 +387,7 @@ export async function handleRequest(request, response) {
       if (!testCase) return sendJson(response, 404, { error: 'Case not found.' });
       if (method === 'GET') return sendJson(response, 200, await caseDetail(testCase));
 
-      const { origin, host } = request.headers;
-      if (origin && (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) || origin !== `http://${host}`)) {
+      if (!isLocalPage(request)) {
         return sendJson(response, 403, { error: 'Start the run from the local eval page.' });
       }
       let settings;

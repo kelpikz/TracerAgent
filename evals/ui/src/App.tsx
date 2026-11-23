@@ -1,5 +1,8 @@
-import { Braces, CircleAlert, FileCode2, FlaskConical, Info, LayoutDashboard, ListChecks, Menu, MessagesSquare, X } from 'lucide-react';
+import { Braces, ChartLine, CircleAlert, FileCode2, FlaskConical, Info, LayoutDashboard, ListChecks, Menu, MessagesSquare, Plus, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { BenchmarkList } from '@/components/benchmark/BenchmarkList';
+import { BenchmarkView } from '@/components/benchmark/BenchmarkView';
+import { NewBenchmark } from '@/components/benchmark/NewBenchmark';
 import { CaseHeader } from '@/components/CaseHeader';
 import { CaseInput } from '@/components/CaseInput';
 import { DashboardTab } from '@/components/DashboardTab';
@@ -9,7 +12,7 @@ import { InfoTab } from '@/components/InfoTab';
 import { RawJsonTab } from '@/components/RawJsonTab';
 import { ResultsTab } from '@/components/ResultsTab';
 import { RunHistory } from '@/components/RunHistory';
-import { Logo, SidebarContent } from '@/components/Sidebar';
+import { Logo, SidebarContent, type Mode } from '@/components/Sidebar';
 import { TranscriptTab } from '@/components/TranscriptTab';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -17,14 +20,22 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { DashboardLink } from '@/lib/types';
+import { readRoute, writeRoute } from '@/lib/route';
 import { cn } from '@/lib/utils';
 import { useAgent } from '@/lib/useAgent';
+import { useBenchmarks } from '@/lib/useBenchmarks';
 import { useEvals } from '@/lib/useEvals';
 import { useJudge } from '@/lib/useJudge';
+
+const startRoute = readRoute();
 
 export default function App() {
   const evals = useEvals();
   const { cases, casesError, caseId, detail, runId, run, runLoading, notice, running } = evals;
+  const [mode, setMode] = useState<Mode>(startRoute.mode);
+  // A benchmark ID, "new" for the setup page, or null before the list loads.
+  const [benchmarkId, setBenchmarkId] = useState<string | null>(startRoute.mode === 'benchmarks' ? startRoute.benchmarkId : null);
+  const benchmarks = useBenchmarks(mode === 'benchmarks', benchmarkId);
   const [menuOpen, setMenuOpen] = useState(false);
   const [runsOpen, setRunsOpen] = useState(false);
   const [chosenTab, setTab] = useState<string | null>(null);
@@ -40,6 +51,25 @@ export default function App() {
     setTab(null);
     setDashLink(null);
   }, [caseId]);
+
+  // The URL shows the open page, so a reload opens it again.
+  useEffect(() => {
+    if (mode === 'benchmarks') writeRoute({ mode, benchmarkId });
+    else if (caseId) writeRoute({ mode, caseId, runId });
+  }, [mode, benchmarkId, caseId, runId]);
+
+  // The first visit to a mode opens its newest item.
+  const firstCase = cases?.[0]?.id;
+  const firstBenchmark = benchmarks.list ? benchmarks.list[0]?.id ?? '' : null;
+  useEffect(() => {
+    if (mode === 'cases' && !caseId && firstCase) evals.openCase(firstCase);
+    if (mode === 'benchmarks' && benchmarkId === null && firstBenchmark) setBenchmarkId(firstBenchmark);
+  }, [mode, caseId, firstCase, benchmarkId, firstBenchmark, evals]);
+
+  const openRun = (forCase: string, forRun: string) => {
+    setMode('cases');
+    evals.openRun(forCase, forRun);
+  };
 
   useEffect(() => {
     if (dashLink) {
@@ -66,6 +96,19 @@ export default function App() {
         evals.openCase(id);
         afterSelect?.();
       }}
+      mode={mode}
+      onModeChange={setMode}
+      benchmarks={(
+        <BenchmarkList
+          list={benchmarks.list}
+          error={benchmarks.listError}
+          selectedId={benchmarkId}
+          onSelect={id => {
+            setBenchmarkId(id);
+            afterSelect?.();
+          }}
+        />
+      )}
     />
   );
 
@@ -88,8 +131,8 @@ export default function App() {
 
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
         <SheetContent>
-          <SheetTitle className="sr-only">Cases</SheetTitle>
-          <SheetDescription className="sr-only">Choose a test case.</SheetDescription>
+          <SheetTitle className="sr-only">Menu</SheetTitle>
+          <SheetDescription className="sr-only">Choose a test case or a benchmark.</SheetDescription>
           {sidebar(() => setMenuOpen(false))}
         </SheetContent>
       </Sheet>
@@ -109,7 +152,7 @@ export default function App() {
         />
 
         <div className="sticky top-0 z-30 flex items-center gap-3 border-b bg-background/80 px-4 py-2.5 backdrop-blur lg:hidden">
-          <Button variant="ghost" size="icon-sm" onClick={() => setMenuOpen(true)} aria-label="Open the case list">
+          <Button variant="ghost" size="icon-sm" onClick={() => setMenuOpen(true)} aria-label="Open the menu">
             <Menu />
           </Button>
           <Logo className="size-6 rounded-md" />
@@ -129,6 +172,37 @@ export default function App() {
             </Alert>
           )}
 
+          {mode === 'benchmarks' ? (
+            benchmarkId === 'new' ? (
+              <NewBenchmark
+                options={judge.options}
+                models={agent.models}
+                judge={judge.choice}
+                cases={cases}
+                onCancel={() => setBenchmarkId(benchmarks.list?.[0]?.id ?? null)}
+                onCreate={async config => setBenchmarkId(await benchmarks.create(config))}
+              />
+            ) : benchmarks.detail ? (
+              <BenchmarkView
+                benchmark={benchmarks.detail}
+                onAction={action => benchmarks.act(benchmarks.detail!.id, action)}
+                onOpenRun={openRun}
+              />
+            ) : benchmarks.detailError ? (
+              <EmptyState icon={CircleAlert} title="Cannot load the benchmark">{benchmarks.detailError}</EmptyState>
+            ) : benchmarks.list?.length === 0 && !benchmarkId ? (
+              <EmptyState
+                icon={ChartLine}
+                title="No benchmarks yet"
+                action={<Button onClick={() => setBenchmarkId('new')}><Plus /> New benchmark</Button>}
+              >
+                A benchmark runs each model, architecture and effort on the cases, and compares the scores.
+              </EmptyState>
+            ) : (
+              <Skeleton className="h-96 w-full rounded-xl" />
+            )
+          ) : (
+          <>
           {cases && cases.length === 0 && (
             <EmptyState icon={FlaskConical} title="No test cases">
               Add a folder with a case.json file in evals/cases.
@@ -204,10 +278,12 @@ export default function App() {
               </Tabs>
             </div>
           )}
+          </>
+          )}
         </main>
       </div>
 
-      {caseId && <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 border-l bg-sidebar xl:block">{runHistory()}</aside>}
+      {mode === 'cases' && caseId && <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 border-l bg-sidebar xl:block">{runHistory()}</aside>}
     </div>
   );
 }
