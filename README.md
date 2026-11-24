@@ -4,7 +4,7 @@
 
 This project benchmarks different AI agents and agent architectures on the same incidents. We want to know which models and which designs find the root cause of a production problem, and how well they do it.
 
-> 📝 **The article with the results is coming soon.**
+> 📝 **Read the article with the results: [Benchmarking agents on incidents](https://files.ajitha.fyi/agents-on-incidents).**
 
 ## The experiment
 
@@ -48,3 +48,7 @@ flowchart TB
 ## Run the experiment yourself
 
 See **[RUNNING.md](RUNNING.md)**.
+
+## License
+
+[MIT](LICENSE)
