@@ -1,6 +1,7 @@
 {
   "name": "traceragent",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "eval": "node evals/harness/cli.js",
